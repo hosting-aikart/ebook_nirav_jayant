@@ -1,21 +1,7 @@
 import { useEffect, useState } from "react";
-
-type Category = "kids" | "meditation" | "abundance";
-
-type Book = {
-  id: string;
-  title: string;
-  eyebrow: string;
-  author: string;
-  price: number;
-  description: string;
-  quote: string;
-  cover?: string;
-  coverClass: string;
-  subtitle: string;
-  category: Category;
-  pages: [string, string][];
-};
+import { Book, Category, CartItem, OrderConfirmation } from "./types";
+import { BagDrawer } from "./components/BagDrawer";
+import { OrderSuccessModal } from "./components/OrderSuccessModal";
 
 const categories: { id: "all" | Category; label: string }[] = [
   { id: "all", label: "All" },
@@ -284,10 +270,19 @@ function Cover({ book, compact = false }: { book: Book; compact?: boolean }) {
   );
 }
 
-function BookReader({ book, onClose }: { book: Book; onClose: () => void }) {
+function BookReader({
+  book,
+  onClose,
+  onAddToBag,
+}: {
+  book: Book;
+  onClose: () => void;
+  onAddToBag: (book: Book) => void;
+}) {
   const [position, setPosition] = useState(0);
   const [direction, setDirection] = useState<"open" | "next" | "prev">("open");
   const [hasOpened, setHasOpened] = useState(false);
+  const [isAdded, setIsAdded] = useState(false);
 
   const turn = (step: number) => {
     const next = Math.max(0, Math.min(book.pages.length, position + step));
@@ -402,8 +397,15 @@ function BookReader({ book, onClose }: { book: Book; onClose: () => void }) {
             <span>Instant access</span>
             <strong>₹{book.price}</strong>
           </div>
-          <button className="primary-button wide-button">
-            Add e-book to bag <ArrowIcon />
+          <button
+            className="primary-button wide-button"
+            onClick={() => {
+              onAddToBag(book);
+              setIsAdded(true);
+              setTimeout(() => setIsAdded(false), 2000);
+            }}
+          >
+            {isAdded ? "Added to bag ✓" : "Add e-book to bag"} <ArrowIcon />
           </button>
           <p className="reader-note">PDF + EPUB · Read on any device</p>
         </div>
@@ -416,6 +418,62 @@ export default function App() {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<"all" | Category>("all");
+
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem("still_cart");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [isBagOpen, setIsBagOpen] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState<OrderConfirmation | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("still_cart", JSON.stringify(cart));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [cart]);
+
+  const addToBag = (book: Book) => {
+    setCart((prev) => {
+      const exists = prev.find((item) => item.book.id === book.id);
+      if (exists) {
+        return prev.map((item) =>
+          item.book.id === book.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+      return [...prev, { book, quantity: 1 }];
+    });
+    setToastMessage(`"${book.title}" added to your bag`);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3000);
+  };
+
+  const updateQuantity = (bookId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromBag(bookId);
+      return;
+    }
+    setCart((prev) =>
+      prev.map((item) =>
+        item.book.id === bookId ? { ...item, quantity } : item
+      )
+    );
+  };
+
+  const removeFromBag = (bookId: string) => {
+    setCart((prev) => prev.filter((item) => item.book.id !== bookId));
+  };
+
+  const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const visibleBooks =
     activeCategory === "all" ? books : books.filter((book) => book.category === activeCategory);
@@ -448,7 +506,9 @@ export default function App() {
           </a>
         </nav>
         <div className="header-actions">
-          <button className="text-button">Bag (0)</button>
+          <button className="text-button" onClick={() => setIsBagOpen(true)}>
+            Bag ({totalCartCount})
+          </button>
           <button
             className="menu-button"
             onClick={() => setMenuOpen((open) => !open)}
@@ -562,7 +622,20 @@ export default function App() {
                     <h3>{book.title}</h3>
                     <p>{book.subtitle}</p>
                   </div>
-                  <strong>₹{book.price}</strong>
+                  <div className="book-card-buy">
+                    <strong>₹{book.price}</strong>
+                    <button
+                      type="button"
+                      className="card-add-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToBag(book);
+                      }}
+                      aria-label={`Add ${book.title} to bag`}
+                    >
+                      + Add
+                    </button>
+                  </div>
                 </div>
               </article>
             ))}
@@ -653,7 +726,46 @@ export default function App() {
         <small>© 2025 Still Studio</small>
       </footer>
 
-      {selectedBook && <BookReader book={selectedBook} onClose={() => setSelectedBook(null)} />}
+      {selectedBook && (
+        <BookReader
+          book={selectedBook}
+          onClose={() => setSelectedBook(null)}
+          onAddToBag={addToBag}
+        />
+      )}
+
+      <BagDrawer
+        isOpen={isBagOpen}
+        onClose={() => setIsBagOpen(false)}
+        cart={cart}
+        onUpdateQuantity={updateQuantity}
+        onRemoveItem={removeFromBag}
+        onPaymentSuccess={(order) => {
+          setOrderSuccess(order);
+          setCart([]);
+        }}
+        onBrowseBooks={scrollToBooks}
+      />
+
+      {orderSuccess && (
+        <OrderSuccessModal
+          order={orderSuccess}
+          onClose={() => setOrderSuccess(null)}
+        />
+      )}
+
+      {toastMessage && (
+        <div className="still-toast" role="status">
+          <span>{toastMessage}</span>
+          <button
+            type="button"
+            className="still-toast-btn"
+            onClick={() => setIsBagOpen(true)}
+          >
+            View Bag
+          </button>
+        </div>
+      )}
     </div>
   );
 }

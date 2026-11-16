@@ -1658,3 +1658,697 @@ footer small {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ============================================================
+   STILL. — SHOPPING BAG, CHECKOUT & RAZORPAY INTEGRATION
+   ============================================================ */
+
+/* Toast notification */
+.still-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 14px 22px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  z-index: 90;
+  font-size: 14px;
+  animation: toast-slide 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.still-toast-btn {
+  background: var(--coral);
+  color: var(--ink);
+  border: 0;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.still-toast-btn:hover {
+  opacity: 0.9;
+}
+
+@keyframes toast-slide {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Book card buy bar */
+.book-card-buy {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-add-btn {
+  border: 1px solid color-mix(in srgb, var(--ink) 25%, transparent);
+  background: transparent;
+  color: var(--ink);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.card-add-btn:hover {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+
+/* Bag Backdrop & Drawer */
+.bag-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(8, 30, 35, 0.55);
+  backdrop-filter: blur(8px);
+  animation: backdrop-in 0.25s ease both;
+}
+
+.bag-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(480px, 100vw);
+  background: var(--paper);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -12px 0 40px rgba(8, 30, 35, 0.2);
+  animation: drawer-slide 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  z-index: 121;
+}
+
+@keyframes drawer-slide {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.bag-header {
+  padding: 24px 28px;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bag-header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bag-header-title h2 {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  margin: 0;
+  font-weight: 400;
+}
+
+.bag-count-pill {
+  font-size: 12px;
+  background: var(--mist);
+  color: var(--ink);
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 500;
+}
+
+.bag-close-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+  background: transparent;
+  color: var(--ink);
+  font-size: 16px;
+  display: grid;
+  place-items: center;
+  transition: all 0.2s;
+}
+
+.bag-close-btn:hover {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.bag-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.bag-empty {
+  margin: auto 0;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 40px 10px;
+}
+
+.bag-empty-icon {
+  font-size: 42px;
+}
+
+.bag-empty h3 {
+  font-family: var(--font-serif);
+  font-size: 24px;
+  margin: 0;
+}
+
+.bag-empty p {
+  color: color-mix(in srgb, var(--ink) 70%, transparent);
+  font-size: 14px;
+  line-height: 1.6;
+  max-width: 300px;
+}
+
+.bag-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.bag-item {
+  display: flex;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+.bag-item-cover {
+  width: 64px;
+  height: 92px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  background: var(--mist);
+}
+
+.bag-item-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bag-item-placeholder {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-serif);
+  font-size: 20px;
+}
+
+.bag-item-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.bag-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.bag-item-header h4 {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.bag-item-price {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.bag-item-author {
+  font-size: 12px;
+  color: color-mix(in srgb, var(--ink) 65%, transparent);
+  margin: 2px 0 4px;
+}
+
+.bag-item-format {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink) 60%, transparent);
+}
+
+.bag-item-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+.qty-controls {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--ink) 20%, transparent);
+  border-radius: 999px;
+  overflow: hidden;
+  height: 30px;
+}
+
+.qty-controls button {
+  width: 30px;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 16px;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s;
+}
+
+.qty-controls button:hover {
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+.qty-controls span {
+  min-width: 26px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.bag-item-remove {
+  background: none;
+  border: none;
+  color: color-mix(in srgb, var(--ink) 60%, transparent);
+  font-size: 12px;
+  text-decoration: underline;
+  padding: 4px;
+  transition: color 0.2s;
+}
+
+.bag-item-remove:hover {
+  color: #c93b2b;
+}
+
+/* Bag Delivery Section & Form */
+.bag-section {
+  padding-top: 16px;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+.bag-section-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.bag-section-help {
+  font-size: 12px;
+  color: color-mix(in srgb, var(--ink) 65%, transparent);
+  margin: 0 0 14px;
+}
+
+.bag-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bag-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.bag-input-group label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.bag-input-group input {
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--ink) 20%, transparent);
+  background: rgba(255, 255, 255, 0.7);
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.bag-input-group input:focus {
+  border-color: var(--ink);
+  background: #ffffff;
+}
+
+/* Mock Banner */
+.mock-banner {
+  background: color-mix(in srgb, var(--yellow) 25%, var(--paper));
+  border: 1px dashed color-mix(in srgb, var(--ink) 30%, transparent);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mock-banner-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.mock-banner p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--ink) 80%, transparent);
+  margin: 0;
+}
+
+.mock-banner code {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+.mock-pay-btn {
+  background: var(--ink);
+  color: var(--paper);
+  border: 0;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.mock-pay-btn:hover {
+  opacity: 0.9;
+}
+
+.bag-error-alert {
+  padding: 12px 14px;
+  background: #ffe8e6;
+  border: 1px solid #fc817c;
+  color: #8c2420;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+/* Bag Footer */
+.bag-footer {
+  padding: 20px 28px;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  background: color-mix(in srgb, var(--paper) 95%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bag-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: color-mix(in srgb, var(--ink) 80%, transparent);
+}
+
+.bag-free-pill {
+  color: #1a6f52;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.bag-total-row {
+  font-size: 18px;
+  color: var(--ink);
+  padding-top: 6px;
+  border-top: 1px dashed color-mix(in srgb, var(--ink) 15%, transparent);
+}
+
+.bag-total-row strong {
+  font-size: 22px;
+  font-family: var(--font-serif);
+}
+
+.bag-checkout-btn {
+  width: 100%;
+  justify-content: center;
+  gap: 12px;
+}
+
+.pay-lock-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-spinner-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid color-mix(in srgb, var(--ink) 30%, transparent);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.bag-trust-badges {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--ink) 60%, transparent);
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* Order Success Modal */
+.order-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(8, 30, 35, 0.72);
+  backdrop-filter: blur(10px);
+  animation: backdrop-in 0.3s ease both;
+}
+
+.order-modal {
+  position: relative;
+  background: var(--paper);
+  color: var(--ink);
+  max-width: 580px;
+  width: 100%;
+  padding: clamp(28px, 4vw, 44px);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  animation: modal-rise 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+@keyframes modal-rise {
+  from {
+    transform: translateY(20px) scale(0.97);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.order-icon-wrap {
+  margin-bottom: 20px;
+}
+
+.order-success-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: color-mix(in srgb, #1a6f52 15%, var(--paper));
+  color: #1a6f52;
+  display: grid;
+  place-items: center;
+}
+
+.order-success-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.order-modal h2 {
+  font-family: var(--font-serif);
+  font-size: clamp(24px, 3.5vw, 32px);
+  margin: 6px 0 12px;
+  line-height: 1.2;
+}
+
+.order-lead {
+  font-size: 15px;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--ink) 80%, transparent);
+  margin: 0 0 24px;
+}
+
+.order-meta-box {
+  background: var(--mist);
+  padding: 14px 18px;
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.order-meta-box span {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: color-mix(in srgb, var(--ink) 65%, transparent);
+  margin-bottom: 2px;
+}
+
+.order-meta-box strong {
+  font-size: 13px;
+  word-break: break-all;
+  font-family: monospace;
+}
+
+.order-downloads-section {
+  margin-bottom: 28px;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  padding-top: 20px;
+}
+
+.order-downloads-section h3 {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  margin: 0 0 4px;
+}
+
+.order-download-hint {
+  font-size: 13px;
+  color: color-mix(in srgb, var(--ink) 65%, transparent);
+  margin: 0 0 16px;
+}
+
+.order-download-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.order-download-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  border-radius: 8px;
+}
+
+.order-download-info h4 {
+  font-size: 15px;
+  margin: 2px 0 0;
+  font-family: var(--font-serif);
+}
+
+.order-book-badge {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--coral);
+}
+
+.order-download-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.order-btn-download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 8px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.order-btn-download:hover {
+  background: color-mix(in srgb, var(--ink) 85%, black);
+}
+
+.order-btn-epub {
+  background: var(--mist);
+  color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+}
+
+.order-btn-epub:hover {
+  background: color-mix(in srgb, var(--mist) 80%, black);
+}
