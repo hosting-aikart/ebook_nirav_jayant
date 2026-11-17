@@ -251,6 +251,75 @@ const books: Book[] = [
   },
 ];
 
+// Set to an image path (e.g. "/assets/about/nirav-jayant.jpg") once the photo is ready.
+const ABOUT_PHOTO: string | null = null;
+
+type Shelf = {
+  id: Category;
+  eyebrow: string;
+  title: string;
+  description: string;
+  highlights: [string, string][];
+  quote: string;
+  cta: string;
+  covers: { src: string; alt: string }[];
+};
+
+const shelves: Shelf[] = [
+  {
+    id: "kids",
+    eyebrow: "BOOKS FOR KIDS",
+    title: "Where play becomes peace",
+    description:
+      "Meditation, breathing and brain-building games that feel like pure play — bringing calm to busy little minds, stillness to restless bodies, and joy to young hearts.",
+    highlights: [
+      ["59", "playful meditations"],
+      ["64", "breathing games"],
+      ["48", "super-sense games"],
+    ],
+    quote: "Meditation should not begin as discipline. It should begin as delight.",
+    cta: "Explore books for kids",
+    covers: [
+      { src: "/books/playing-with-breath.jpg", alt: "Playing with Breath book cover" },
+      { src: "/books/playing-with-meditation.png", alt: "Playing with Meditation book cover" },
+    ],
+  },
+  {
+    id: "meditation",
+    eyebrow: "BOOKS FOR MEDITATION",
+    title: "Release, relax, return",
+    description:
+      "Somatic practices, Zen stories and daily meditations that release anger and anxiety from the body — so the mind becomes quiet on its own.",
+    highlights: [
+      ["59", "somatic practices"],
+      ["5–10", "minute body resets"],
+      ["365", "daily meditations"],
+    ],
+    quote: "Anger becomes energy, anxiety becomes awareness, and your body becomes your healer.",
+    cta: "Explore meditation books",
+    covers: [
+      { src: "/books/unwinding-anxiety.png", alt: "Unwinding Anxiety book cover" },
+      { src: "/books/zenful-stories.png", alt: "Zenful Stories book cover" },
+      { src: "/books/release-and-relax.png", alt: "Release and Relax book cover" },
+    ],
+  },
+  {
+    id: "abundance",
+    eyebrow: "BOOKS FOR MONEY & ABUNDANCE",
+    title: "Open to possibility",
+    description:
+      "Gentle wisdom for loosening your grip on how — trusting the unknown, opening your hands, and letting abundance find its way to you.",
+    highlights: [
+      ["Open", "hands, open heart"],
+      ["Trust", "the unknown"],
+      ["Grow", "into possibility"],
+    ],
+    quote: "When you stop insisting on how, life begins to show you somehow.",
+    cta: "Explore abundance books",
+    covers: [{ src: "/books/somehow.jpg", alt: "Somehow book cover" }],
+  },
+];
+
 function ArrowIcon() {
   return (
     <svg viewBox="0 0 18 18" aria-hidden="true">
@@ -569,42 +638,199 @@ export default function App() {
           </div>
         </section>
 
-        <section className="practice-section" id="about" aria-label="Three ways to return">
-          <article className="practice-card practice-quiet">
-            <div className="practice-copy">
-              <span>01 · MEDITATION</span>
-              <h2>Quiet the mind</h2>
-              <p>Create a little space between you and the noise of everyday life.</p>
-            </div>
-            <img
-              src="/assets/meditation/quiet-mind.jpg"
-              alt="A singing bowl and mallet arranged for meditation"
-            />
-          </article>
-          <article className="practice-card practice-present">
-            <div className="practice-copy">
-              <span>02 · MINDFULNESS</span>
-              <h2>Return to the present</h2>
-              <p>Discover the extraordinary in the beautifully ordinary.</p>
-            </div>
-            <img
-              src="/assets/meditation/present.jpg"
-              alt="An open journal on a quiet wooden table"
-            />
-          </article>
-          <article className="practice-card practice-body">
-            <div className="practice-copy">
-              <span>03 · EMOTIONAL RELEASE</span>
-              <h2>Listen to your body</h2>
-              <p>Make room to feel, soften, and let life move through you.</p>
-            </div>
-            <img
-              src="/assets/meditation/listen-body.jpg"
-              alt="A woman pausing with one hand over her heart"
-            />
-          </article>
-        </section>
+        <section className="about-section" id="about" aria-labelledby="about-title">
+          {/* Part 1 — portrait + headline with retro stripes */}
+          <div className="about-intro">
+            <svg
+              className="about-stripes"
+              viewBox="0 0 1440 360"
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            >
+              {[
+                ["#d9c48f", 0],
+                ["#f4a49c", 26],
+                ["#fc817c", 52],
+                ["#123f48", 78],
+              ].map(([color, o]) => (
+                <path
+                  key={color}
+                  d={`M0 ${250 + Number(o)} H${780 + Number(o)} C${900 + Number(o)} ${250 + Number(o)} ${900 + Number(o)} ${130 + Number(o)} ${1020 + Number(o)} ${130 + Number(o)} H1440`}
+                  stroke={color as string}
+                />
+              ))}
+            </svg>
 
+            <div className="about-portrait">
+              <svg className="about-sparkles" viewBox="0 0 120 140" aria-hidden="true">
+                <path d="M40 20 Q44 52 72 56 Q44 60 40 92 Q36 60 8 56 Q36 52 40 20Z" />
+                <path d="M88 0 Q90 16 104 18 Q90 20 88 36 Q86 20 72 18 Q86 16 88 0Z" />
+                <path d="M78 74 Q80 88 92 90 Q80 92 78 106 Q76 92 64 90 Q76 88 78 74Z" />
+                <circle cx="14" cy="14" r="4" />
+              </svg>
+              <svg className="about-sparkles about-sparkles-low" viewBox="0 0 80 100" aria-hidden="true">
+                <path d="M34 20 Q37 48 62 52 Q37 56 34 84 Q31 56 6 52 Q31 48 34 20Z" />
+                <circle cx="66" cy="12" r="4" />
+              </svg>
+              <div className="about-blob" aria-hidden="true" />
+              <div className="about-photo-frame">
+                {ABOUT_PHOTO ? (
+                  <img src={ABOUT_PHOTO} alt="Dr. Sw. Nirav Jayant" />
+                ) : (
+                  <div className="about-photo-placeholder">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
+                      <circle cx="12" cy="13" r="3.5" />
+                    </svg>
+                    <span>Photo coming soon</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="about-headline">
+              <span className="eyebrow">MEET NIRAV</span>
+              <h2 id="about-title">
+                Osho Meditation Facilitator,
+                <br />
+                <em>Author &amp; Guide</em> to
+                <br />
+                Joyful Inner Growth
+              </h2>
+              <p className="about-signature">— Dr. Sw. Nirav Jayant</p>
+            </div>
+          </div>
+
+          {/* Part 2 — About card + decorative side */}
+          <div className="about-story">
+            <article className="about-card">
+              <h3>About Me</h3>
+              <p className="about-lead">
+                An Osho Sannyasin since 1995, Dr. Sw. Nirav Jayant is an experienced Osho meditation
+                facilitator with over 20 years of devoted practice and guidance.
+              </p>
+              <p>
+                He has been leading Osho meditation camps, retreats, and online workshops, touching
+                the hearts of many Osho lovers around the world. His joyful, lighthearted style
+                creates an atmosphere of deep transformation through laughter, silence, and
+                awareness.
+              </p>
+              <p>
+                He is also the author of several books on meditation, inner growth, and conscious
+                living, and has designed many online and offline workshops, including{" "}
+                <em>Healing the Inner Child</em>, <em>Living with Intuition</em>, and{" "}
+                <em>5 Steps to Freedom</em>.
+              </p>
+              <p>
+                He brings his skills as a coach in Neuro-Linguistic Programming to his work and is
+                also a Tai Chi teacher.
+              </p>
+            </article>
+
+            <div className="about-side">
+              <svg className="about-mandala" viewBox="0 0 200 200" aria-hidden="true">
+                <circle cx="100" cy="100" r="92" />
+                <circle cx="100" cy="100" r="74" strokeDasharray="2 6" />
+                <circle cx="100" cy="100" r="40" />
+                {Array.from({ length: 12 }, (_, i) => (
+                  <ellipse
+                    key={i}
+                    cx="100"
+                    cy="44"
+                    rx="10"
+                    ry="20"
+                    transform={`rotate(${i * 30} 100 100)`}
+                  />
+                ))}
+                <circle cx="100" cy="100" r="8" />
+              </svg>
+              <dl className="about-stats">
+                <div>
+                  <dt>1995</dt>
+                  <dd>Sannyasin since</dd>
+                </div>
+                <div>
+                  <dt>20+</dt>
+                  <dd>Years devoted</dd>
+                </div>
+                <div>
+                  <dt>NLP</dt>
+                  <dd>Coach · Tai Chi teacher</dd>
+                </div>
+              </dl>
+              <p className="about-motto">Laughter · Silence · Awareness</p>
+            </div>
+          </div>
+
+          <svg className="about-wave" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M0 60 C240 0 480 10 720 52 C960 94 1200 110 1440 40 V120 H0Z" />
+          </svg>
+        </section>
+        <section className="shelves-section" id="practices" aria-labelledby="shelves-title">
+          <header className="shelves-header">
+            <span className="eyebrow">THREE SHELVES · ONE JOURNEY</span>
+            <h2 id="shelves-title">
+              Find the book
+              <br />
+              <em>that finds you.</em>
+            </h2>
+            <p>
+              Playful practices for little ones, body-wise meditations for grown-ups, and gentle
+              wisdom for opening to abundance.
+            </p>
+          </header>
+
+          <div className="shelves-grid">
+            {shelves.map((shelf, index) => {
+              const count = books.filter((book) => book.category === shelf.id).length;
+              return (
+                <article className={`shelf-card shelf-${shelf.id}`} key={shelf.id}>
+                  <div className="shelf-copy">
+                    <span className="shelf-eyebrow">
+                      {String(index + 1).padStart(2, "0")} · {shelf.eyebrow}
+                    </span>
+                    <h3>{shelf.title}</h3>
+                    <p>{shelf.description}</p>
+                    <ul className="shelf-highlights">
+                      {shelf.highlights.map(([value, label]) => (
+                        <li key={label}>
+                          <strong>{value}</strong>
+                          <span>{label}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="shelf-stage">
+                    <span className="shelf-sun" aria-hidden="true" />
+                    <div className={`shelf-covers covers-${shelf.covers.length}`}>
+                      {shelf.covers.map((cover) => (
+                        <img key={cover.src} src={cover.src} alt={cover.alt} loading="lazy" />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="shelf-footer">
+                    <blockquote>{shelf.quote}</blockquote>
+                    <a
+                      className="shelf-cta"
+                      href="#books"
+                      onClick={() => setActiveCategory(shelf.id)}
+                    >
+                      <span>
+                        {shelf.cta}
+                        <small>
+                          {count} {count === 1 ? "book" : "books"}
+                        </small>
+                      </span>
+                      <ArrowIcon />
+                    </a>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
         <section className="journal-section" id="journal">
           <span className="eyebrow">A NOTE FOR YOUR DAY</span>
           <blockquote>
