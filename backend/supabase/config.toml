@@ -1,0 +1,13 @@
+# Supabase project config. Run `supabase link --project-ref <your-ref>` from /backend.
+project_id = "still-ebook-store"
+
+# Checkout functions are called by (logged-out) customers and by Razorpay,
+# so they must not require a Supabase user JWT. Each one validates its own input.
+[functions.create-order]
+verify_jwt = false
+
+[functions.verify-payment]
+verify_jwt = false
+
+[functions.razorpay-webhook]
+verify_jwt = false

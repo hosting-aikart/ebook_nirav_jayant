@@ -75,10 +75,30 @@
 
 .brand-name {
   font-family: "DM Serif Display", serif;
-  font-size: 24px;
+  font-size: 30px;
   font-weight: 400;
   letter-spacing: 0;
   white-space: nowrap;
+}
+
+.brand-lockup {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.brand-lockup .brand-name {
+  line-height: 1;
+}
+
+.brand-tagline {
+  font-family: "DM Serif Display", serif;
+  font-style: italic;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  opacity: 0.75;
 }
 
 .brand-mark {
@@ -96,14 +116,14 @@
 .site-header nav {
   display: flex;
   align-items: center;
-  gap: 40px;
+  gap: 90px;
 }
 
 .site-header nav a,
 .text-button {
   color: var(--ink);
   text-decoration: none;
-  font-size: 16px;
+  font-size: 22px;
   border: 0;
   background: none;
 }
@@ -167,7 +187,7 @@
 
 .eyebrow {
   display: block;
-  font-size: 11px;
+  font-size: 15px;
   letter-spacing: 0.18em;
   line-height: 1.5;
   font-weight: 600;
@@ -189,7 +209,7 @@
   line-height: 0.83;
 }
 
-.hero-copy > p {
+.hero-copy>p {
   max-width: 650px;
   margin: 0;
   font-size: clamp(17px, 1.45vw, 23px);
@@ -214,7 +234,7 @@
   align-items: center;
   justify-content: center;
   gap: 22px;
-  font-size: 14px;
+  font-size: 20px;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
@@ -246,7 +266,7 @@
   gap: 15px;
   border-bottom: 1px solid var(--ink);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 20px;
 }
 
 .hero-footnote {
@@ -254,7 +274,7 @@
   display: flex;
   align-items: center;
   gap: 28px;
-  font-size: 12px;
+  font-size: 15px;
   letter-spacing: 0.04em;
 }
 
@@ -382,7 +402,7 @@
   position: absolute;
   bottom: 0;
   left: 38%;
-  font-size: 10px;
+  font-size: 13px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
@@ -398,7 +418,7 @@
   gap: clamp(28px, 5vw, 90px);
   text-transform: uppercase;
   letter-spacing: 0.17em;
-  font-size: 10px;
+  font-size: 15px;
 }
 
 .promise-strip i {
@@ -409,7 +429,7 @@
 }
 
 .books-section {
-  padding: clamp(90px, 11vw, 170px) clamp(24px, 5.5vw, 95px);
+  padding: clamp(90px, 1vw, 170px) clamp(24px, 5.5vw, 95px);
 }
 
 .section-heading {
@@ -428,7 +448,7 @@
   line-height: 0.95;
 }
 
-.section-heading > p {
+.section-heading>p {
   max-width: 480px;
   margin: 0 0 7px;
   line-height: 1.7;
@@ -713,7 +733,7 @@
   top: -2px;
 }
 
-.journal-section > p {
+.journal-section>p {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -769,53 +789,90 @@
   color: var(--ink);
 }
 
-.newsletter form > p {
+.newsletter form>p {
   margin-top: 17px;
   font-size: 10px;
 }
 
-footer {
-  min-height: 230px;
-  padding: 60px clamp(24px, 4.2vw, 72px);
-  display: grid;
-  grid-template-columns: 1fr 1fr auto;
-  align-items: center;
-  gap: 30px;
+/* Footer */
+.site-footer {
+  padding: 70px clamp(24px, 4.2vw, 72px) 28px;
   background: var(--ink);
-  color: white;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.6fr) repeat(auto-fit, minmax(160px, 1fr));
+  gap: 40px clamp(24px, 4vw, 64px);
+  align-items: start;
 }
 
 .footer-brand {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 6px;
+  color: white;
+  text-decoration: none;
+}
+
+.footer-brand .brand-name {
+  font-size: 30px;
+  line-height: 1;
+}
+
+.footer-brand .brand-tagline {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.footer-about p {
+  margin: 22px 0 0;
+  max-width: 300px;
+  font-family: "DM Serif Display", serif;
+  font-size: 22px;
+  line-height: 1.25;
   color: white;
 }
 
-.footer-brand .brand-mark {
-  border-color: white;
-}
-
-footer > p {
-  font-family: "DM Serif Display", serif;
-  font-size: 22px;
-  text-align: center;
-}
-
-footer > div {
+.footer-col {
   display: flex;
-  gap: 25px;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 14px;
+  line-height: 1.4;
 }
 
-footer a {
+.footer-col h4 {
+  margin: 6px 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: white;
+}
+
+.footer-col a {
+  width: fit-content;
   color: inherit;
   text-decoration: none;
-  font-size: 12px;
+  transition: color 0.2s;
 }
 
-footer small {
-  grid-column: 1 / -1;
-  padding-top: 25px;
+.footer-col a:hover {
+  color: var(--coral, #fc817c);
+}
+
+.footer-bottom {
+  margin-top: 56px;
+  padding-top: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px 30px;
   border-top: 1px solid rgba(255, 255, 255, 0.15);
-  font-size: 9px;
-  letter-spacing: 0.1em;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.55);
 }
 
 /* Inline animated reader */
@@ -836,7 +893,7 @@ footer small {
   min-height: min(720px, calc(100dvh - 50px));
   max-height: calc(100dvh - 30px);
   display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
   background: #fff9f3;
   position: relative;
   overflow: auto;
@@ -875,7 +932,7 @@ footer small {
 
 .reader-visual {
   min-height: 680px;
-  padding: 70px 30px 42px;
+  padding: 56px 30px 36px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -886,7 +943,7 @@ footer small {
 }
 
 .reader-glow {
-  width: 65%;
+  width: 78%;
   aspect-ratio: 1;
   position: absolute;
   border-radius: 50%;
@@ -895,8 +952,8 @@ footer small {
 }
 
 .book-scene {
-  width: min(620px, 100%);
-  aspect-ratio: 1.55;
+  width: min(800px, 100%, (100dvh - 180px) * 1.2);
+  aspect-ratio: 1.2;
   display: grid;
   place-items: center;
   perspective: 1600px;
@@ -905,7 +962,7 @@ footer small {
 }
 
 .open-book {
-  width: 88%;
+  width: 98%;
   aspect-ratio: 1.55;
   position: relative;
   transform: rotateX(8deg);
@@ -945,13 +1002,11 @@ footer small {
   border: 0;
   color: #273e3f;
   background:
-    repeating-linear-gradient(
-      90deg,
+    repeating-linear-gradient(90deg,
       rgba(105, 83, 50, 0.025) 0,
       rgba(105, 83, 50, 0.025) 1px,
       transparent 1px,
-      transparent 4px
-    ),
+      transparent 4px),
     #fffdf5;
   text-align: left;
   overflow: hidden;
@@ -970,7 +1025,7 @@ footer small {
 }
 
 .reader-mode-cover .open-book {
-  width: 42%;
+  width: 56%;
   aspect-ratio: 2 / 3;
 }
 
@@ -1000,14 +1055,14 @@ footer small {
 .paper-page h3 {
   margin: 0 0 10%;
   font-family: "DM Serif Display", serif;
-  font-size: clamp(18px, 2vw, 30px);
+  font-size: clamp(18px, 2.2vw, 34px);
   font-weight: 400;
 }
 
 .paper-page p {
   margin: 0;
   font-family: "DM Serif Display", serif;
-  font-size: clamp(8px, 0.9vw, 13px);
+  font-size: clamp(9px, 1vw, 15px);
   line-height: 1.7;
 }
 
@@ -1048,12 +1103,10 @@ footer small {
   z-index: 6;
   left: 48.5%;
   top: 0;
-  background: linear-gradient(
-    90deg,
-    rgba(25, 45, 44, 0.2),
-    rgba(255, 255, 255, 0.7),
-    rgba(25, 45, 44, 0.25)
-  );
+  background: linear-gradient(90deg,
+      rgba(25, 45, 44, 0.2),
+      rgba(255, 255, 255, 0.7),
+      rgba(25, 45, 44, 0.25));
   clip-path: polygon(36% 0, 64% 0, 100% 100%, 0 100%);
   pointer-events: none;
 }
@@ -1185,7 +1238,7 @@ footer small {
 }
 
 .reader-details {
-  padding: clamp(75px, 7vw, 115px) clamp(45px, 6vw, 95px);
+  padding: clamp(75px, 7vw, 115px) clamp(32px, 4vw, 72px);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1193,8 +1246,71 @@ footer small {
 
 .reader-details h2 {
   margin: 25px 0 20px;
-  font-size: clamp(48px, 5vw, 78px);
+  /* Words never break mid-word; BookReader shrinks the font if one long word doesn't fit. */
+  font-size: clamp(40px, 3.8vw, 72px);
   line-height: 0.96;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  hyphens: manual;
+}
+
+.reader-more {
+  margin-top: 18px;
+  max-width: 500px;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.reader-more summary {
+  width: fit-content;
+  cursor: pointer;
+  list-style: none;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 2px;
+}
+
+.reader-more summary::-webkit-details-marker {
+  display: none;
+}
+
+.reader-more summary::after {
+  content: " ↓";
+}
+
+.reader-more[open] summary::after {
+  content: " ↑";
+}
+
+.reader-more .more-open,
+.reader-more[open] .more-closed {
+  display: none;
+}
+
+.reader-more[open] .more-open {
+  display: inline;
+}
+
+.reader-more p {
+  margin: 14px 0 0;
+}
+
+.reader-more h3 {
+  margin: 22px 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.reader-more ul {
+  margin: 0;
+  padding-left: 18px;
+  list-style: disc;
+  display: grid;
+  gap: 6px;
 }
 
 .reader-description {
@@ -1254,10 +1370,12 @@ footer small {
 }
 
 @keyframes open-cover {
+
   0%,
   15% {
     transform: rotateY(0deg);
   }
+
   100% {
     transform: rotateY(-166deg);
   }
@@ -1267,6 +1385,7 @@ footer small {
   0% {
     transform: rotateY(-166deg);
   }
+
   100% {
     transform: rotateY(0deg);
   }
@@ -1276,9 +1395,11 @@ footer small {
   0% {
     transform: rotateY(0deg);
   }
+
   48% {
     box-shadow: -22px 5px 25px rgba(22, 43, 43, 0.18);
   }
+
   100% {
     transform: rotateY(-180deg);
     visibility: hidden;
@@ -1289,9 +1410,11 @@ footer small {
   0% {
     transform: rotateY(0deg);
   }
+
   48% {
     box-shadow: 22px 5px 25px rgba(22, 43, 43, 0.18);
   }
+
   100% {
     transform: rotateY(180deg);
     visibility: hidden;
@@ -1457,6 +1580,10 @@ footer small {
     font-size: 20px;
   }
 
+  .brand-tagline {
+    font-size: 11px;
+  }
+
   .card-cover-button {
     padding: 25px;
   }
@@ -1480,13 +1607,12 @@ footer small {
     gap: 60px;
   }
 
-  footer {
-    grid-template-columns: 1fr;
-    text-align: left;
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
   }
 
-  footer > p {
-    text-align: left;
+  .footer-about {
+    grid-column: 1 / -1;
   }
 
   .reader-backdrop {
@@ -1551,6 +1677,7 @@ footer small {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -1868,6 +1995,7 @@ footer small {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .about-blob,
   .about-mandala {
     animation: none;
@@ -1995,7 +2123,7 @@ footer small {
   gap: 4px;
 }
 
-.shelf-highlights li + li {
+.shelf-highlights li+li {
   border-left: 1px solid rgb(18 63 72 / 0.18);
 }
 
@@ -2193,9 +2321,268 @@ footer small {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .shelf-card,
   .shelf-card *,
   .shelf-card:hover {
     transition: none !important;
   }
+}
+/* ============================================================
+   Bookshelf page (/books) + home-page link to it
+   ============================================================ */
+.bookshelf-link {
+  margin: clamp(48px, 5vw, 72px) auto 0;
+  width: fit-content;
+  padding: 16px 26px;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--ink);
+  font-size: 15px;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.bookshelf-link small {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+  font-size: 11px;
+}
+
+.bookshelf-link svg,
+.shelf-search svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+
+.bookshelf-link:hover {
+  background: var(--ink);
+  color: #fffaf4;
+}
+
+.bookshelf-link:hover small {
+  background: var(--coral);
+  color: var(--ink);
+}
+
+.site-header nav a[aria-current="page"] {
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+
+.bookshelf-page {
+  min-height: 70vh;
+}
+
+.bookshelf-title {
+  margin: 24px 0 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(52px, 5.5vw, 88px);
+  line-height: 0.95;
+}
+
+.bookshelf-title em {
+  color: var(--coral);
+}
+
+.shelf-toolbar {
+  margin: -20px 0 28px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 20px;
+}
+
+.shelf-search {
+  flex: 1 1 260px;
+  max-width: 420px;
+  padding: 0 18px;
+  border: 1px solid color-mix(in srgb, var(--ink) 25%, transparent);
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: color-mix(in srgb, white 55%, transparent);
+}
+
+.shelf-search:focus-within {
+  border-color: var(--ink);
+}
+
+.shelf-search input {
+  width: 100%;
+  padding: 12px 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.shelf-pills {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+
+.shelf-pill {
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.shelf-pill.is-active {
+  background: #fffaf4;
+  box-shadow: 0 1px 4px rgba(18, 63, 72, 0.15);
+}
+
+.shelf-sort {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.shelf-sort select {
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--ink) 25%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.shelf-result-count {
+  margin: 0 0 32px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+}
+
+.shelf-clear {
+  border: 0;
+  background: none;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  font-size: 13px;
+}
+
+.shelf-empty {
+  padding: 80px 20px;
+  display: grid;
+  justify-items: center;
+  gap: 24px;
+  text-align: center;
+  border: 1px dashed color-mix(in srgb, var(--ink) 25%, transparent);
+}
+
+.book-language {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fffaf4;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  z-index: 1;
+}
+
+@media (max-width: 760px) {
+  .shelf-toolbar {
+    margin-top: -12px;
+  }
+
+  .shelf-search {
+    max-width: none;
+  }
+
+  .shelf-sort {
+    margin-left: 0;
+  }
+}
+
+/* ============================================================
+   Image preview pages in the reader — printed edge to edge, like a real book
+   ============================================================ */
+/* Open-book shape follows the page images: two pages (49.7% wide, 96% tall each). */
+.has-image-pages.reader-mode-pages .open-book {
+  aspect-ratio: calc(var(--page-ratio, 0.72) * 1.93);
+}
+
+.paper-page.has-image {
+  padding: 0;
+  overflow: hidden;
+}
+
+.page-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+/* Paper grain + the curve of the page into the spine, laid over the print. */
+.paper-page.has-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg,
+      rgba(105, 83, 50, 0.03) 0,
+      rgba(105, 83, 50, 0.03) 1px,
+      transparent 1px,
+      transparent 4px);
+}
+
+.left-paper.has-image::after {
+  background:
+    linear-gradient(90deg,
+      transparent 0%,
+      transparent 78%,
+      rgba(25, 35, 33, 0.08) 90%,
+      rgba(25, 35, 33, 0.28) 100%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.10), transparent 6%),
+    repeating-linear-gradient(90deg,
+      rgba(105, 83, 50, 0.03) 0,
+      rgba(105, 83, 50, 0.03) 1px,
+      transparent 1px,
+      transparent 4px);
+}
+
+.right-paper.has-image::after {
+  background:
+    linear-gradient(-90deg,
+      transparent 0%,
+      transparent 78%,
+      rgba(25, 35, 33, 0.08) 90%,
+      rgba(25, 35, 33, 0.28) 100%),
+    linear-gradient(-90deg, rgba(255, 255, 255, 0.10), transparent 6%),
+    repeating-linear-gradient(90deg,
+      rgba(105, 83, 50, 0.03) 0,
+      rgba(105, 83, 50, 0.03) 1px,
+      transparent 1px,
+      transparent 4px);
 }
