@@ -14,31 +14,41 @@ A mindful digital e-book platform featuring interactive 3D flip-book reading pre
 
 ## 🚀 Quick Start Guide
 
-### 1. Backend Setup
+### 🌟 Single Command Start (Recommended)
+
+From the project root:
+```bash
+npm run dev
+```
+This concurrently starts:
+* **Frontend** (Vite) at `http://localhost:5173`
+* **Backend** (Express + Neon DB + Razorpay) at `http://localhost:5000`
+
+---
+
+### Manual Setup (Separate Terminals)
+
+#### 1. Backend Setup
 
 ```bash
 cd backend
 npm install
+npm run dev
 ```
 
-Configure your Razorpay API keys in `backend/.env`:
+Configure your credentials in `backend/.env`:
 ```env
 PORT=5000
 FRONTEND_URL=http://localhost:5173
+DATABASE_URL=postgresql://YOUR_NEON_USER:YOUR_NEON_PASSWORD@YOUR_NEON_HOST/neondb?sslmode=require
 RAZORPAY_KEY_ID=rzp_test_YOUR_KEY_ID
 RAZORPAY_KEY_SECRET=YOUR_KEY_SECRET
 ```
-> **Note**: If left as placeholder keys, the backend automatically runs in **Developer Demo Mode**, allowing you to test the complete order generation and payment verification workflow without real credentials.
-
-Start the backend server:
-```bash
-npm run dev
-```
-The backend API runs on `http://localhost:5000`.
+> **Note**: If left with placeholder keys, the backend automatically runs in **Developer Demo Mode**, allowing you to test the complete order generation and payment verification workflow without real credentials.
 
 ---
 
-### 2. Frontend Setup
+#### 2. Frontend Setup
 
 In a new terminal:
 ```bash
