@@ -1,19 +1,5 @@
-export type Category = "kids" | "meditation" | "abundance";
-
-export interface Book {
-  id: string;
-  title: string;
-  eyebrow: string;
-  author: string;
-  price: number;
-  description: string;
-  quote: string;
-  cover?: string;
-  coverClass: string;
-  subtitle: string;
-  category: Category;
-  pages: [string, string][];
-}
+import type { Book, Category, Language } from "./data/books";
+export type { Book, Category, Language };
 
 export interface CartItem {
   book: Book;
