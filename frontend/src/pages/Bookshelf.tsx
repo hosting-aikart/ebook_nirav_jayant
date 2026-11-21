@@ -8,14 +8,6 @@ import { fetchBooks } from "../lib/books";
 
 type CategoryFilter = "all" | Category;
 type LanguageFilter = "all" | Language;
-type Sort = "featured" | "price-asc" | "price-desc" | "title";
-
-const sortLabels: Record<Sort, string> = {
-  featured: "Recommended",
-  "price-asc": "Price: low to high",
-  "price-desc": "Price: high to low",
-  title: "Title: A–Z",
-};
 
 function readCategory(): CategoryFilter {
   const value = new URLSearchParams(window.location.search).get("category");
@@ -28,7 +20,6 @@ export default function Bookshelf() {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [category, setCategory] = useState<CategoryFilter>(readCategory);
   const [language, setLanguage] = useState<LanguageFilter>("all");
-  const [sort, setSort] = useState<Sort>("featured");
   const [query, setQuery] = useState("");
   const bag = useBag(books);
 
@@ -68,13 +59,10 @@ export default function Bookshelf() {
     );
   }, [books, language, query]);
 
-  const visible = useMemo(() => {
-    const list = category === "all" ? searched : searched.filter((b) => b.category === category);
-    if (sort === "featured") return list;
-    return [...list].sort((a, b) =>
-      sort === "price-asc" ? a.price - b.price : sort === "price-desc" ? b.price - a.price : a.title.localeCompare(b.title),
-    );
-  }, [searched, category, sort]);
+  const visible = useMemo(
+    () => (category === "all" ? searched : searched.filter((b) => b.category === category)),
+    [searched, category],
+  );
 
   const availableLanguages = languages.filter((lang) => books.some((b) => b.language === lang));
   const hasFilters = category !== "all" || language !== "all" || query.trim() !== "";
@@ -89,6 +77,20 @@ export default function Bookshelf() {
       <SiteHeader onHome={false} bagCount={bag.count} onOpenBag={bag.open} />
 
       <main className="books-section bookshelf-page">
+        <label className="shelf-search">
+          <span className="sr-only">Search books</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="11" cy="11" r="6.5" />
+            <path d="m16 16 4.5 4.5" />
+          </svg>
+          <input
+            type="search"
+            placeholder="Search books by title or topic…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
+
         <div className="section-heading">
           <div>
             <span className="eyebrow">THE BOOKSHELF</span>
@@ -98,44 +100,30 @@ export default function Bookshelf() {
               <em>in one place.</em>
             </h1>
           </div>
-          <p>
+          <p className="bookshelf-intro">
             Playful practices for little ones, body-wise meditations for grown-ups, and gentle wisdom for
             opening to abundance. Find the one that finds you.
           </p>
         </div>
 
-        <div className="category-tabs" role="tablist" aria-label="Book categories">
-          {categories.map((c) => {
-            const count = c.id === "all" ? searched.length : searched.filter((b) => b.category === c.id).length;
-            return (
-              <button
-                key={c.id}
-                role="tab"
-                aria-selected={category === c.id}
-                className={`category-tab ${category === c.id ? "is-active" : ""}`}
-                onClick={() => setCategory(c.id)}
-              >
-                {c.label}
-                <span className="category-count">{count}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="shelf-toolbar">
-          <label className="shelf-search">
-            <span className="sr-only">Search books</span>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="11" cy="11" r="6.5" />
-              <path d="m16 16 4.5 4.5" />
-            </svg>
-            <input
-              type="search"
-              placeholder="Search by title or topic…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </label>
+        <div className="shelf-filters">
+          <div className="category-tabs" role="tablist" aria-label="Book categories">
+            {categories.map((c) => {
+              const count = c.id === "all" ? searched.length : searched.filter((b) => b.category === c.id).length;
+              return (
+                <button
+                  key={c.id}
+                  role="tab"
+                  aria-selected={category === c.id}
+                  className={`category-tab ${category === c.id ? "is-active" : ""}`}
+                  onClick={() => setCategory(c.id)}
+                >
+                  {c.label}
+                  <span className="category-count">{count}</span>
+                </button>
+              );
+            })}
+          </div>
 
           {availableLanguages.length > 1 && (
             <div className="shelf-pills" role="group" aria-label="Language">
@@ -151,17 +139,6 @@ export default function Bookshelf() {
               ))}
             </div>
           )}
-
-          <label className="shelf-sort">
-            <span>Sort</span>
-            <select value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
-              {(Object.keys(sortLabels) as Sort[]).map((s) => (
-                <option key={s} value={s}>
-                  {sortLabels[s]}
-                </option>
-              ))}
-            </select>
-          </label>
         </div>
 
         <p className="shelf-result-count" aria-live="polite">
@@ -181,7 +158,7 @@ export default function Bookshelf() {
             </button>
           </div>
         ) : (
-          <div className="book-grid" key={`${category}-${language}-${sort}`}>
+          <div className="book-grid" key={`${category}-${language}`}>
             {visible.map((book, index) => (
               <article className="book-card" key={book.id}>
                 <button
@@ -209,7 +186,10 @@ export default function Bookshelf() {
                       onClick={() => bag.add(book)}
                       aria-label={`Add ${book.title} to bag`}
                     >
-                      + Add
+                      <svg viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="M8 3v10M3 8h10" />
+                      </svg>
+                      Add
                     </button>
                   </div>
                 </div>

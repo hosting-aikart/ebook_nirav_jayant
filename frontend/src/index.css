@@ -409,16 +409,45 @@
 
 .promise-strip {
   min-height: 86px;
-  padding: 20px clamp(24px, 4.2vw, 72px);
   background: var(--ink);
   color: #fffaf4;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: clamp(28px, 5vw, 90px);
+  overflow: hidden;
+  white-space: nowrap;
   text-transform: uppercase;
   letter-spacing: 0.17em;
   font-size: 15px;
+  --promise-gap: clamp(28px, 5vw, 90px);
+}
+
+/* Four identical groups; sliding by exactly one group (25%) loops without a jump. */
+.promise-track {
+  display: flex;
+  width: max-content;
+  animation: promise-scroll 28s linear infinite;
+}
+
+.promise-group {
+  display: flex;
+  align-items: center;
+  gap: var(--promise-gap);
+  padding-right: var(--promise-gap);
+}
+
+.promise-strip:hover .promise-track {
+  animation-play-state: paused;
+}
+
+/* Moves left → right. */
+@keyframes promise-scroll {
+  from {
+    transform: translateX(-25%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
 }
 
 .promise-strip i {
@@ -521,6 +550,8 @@
 
 .book-card {
   scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
 }
 
 .card-cover-button {
@@ -593,11 +624,13 @@
   transform: translate(-50%, 0);
 }
 
+/* Title + subtitle on top; price and Add pinned to the bottom so every card in a row lines up. */
 .book-card-info {
+  flex: 1;
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   justify-content: space-between;
-  gap: 20px;
+  gap: 16px;
   padding-top: 22px;
 }
 
@@ -617,8 +650,10 @@
 }
 
 .book-card-info strong {
-  font-size: 13px;
-  font-weight: 500;
+  font-family: "DM Serif Display", serif;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1;
 }
 
 .cover-art {
@@ -1535,8 +1570,11 @@
   }
 
   .orbit-two {
-    width: 310px;
-    height: 310px;
+    width: min(310px, 72vw);
+    height: min(310px, 72vw);
+    right: 2%;
+    top: 22%;
+    bottom: auto;
   }
 
   .hero-front {
@@ -1550,9 +1588,12 @@
   }
 
   .promise-strip {
-    justify-content: flex-start;
-    overflow: hidden;
-    white-space: nowrap;
+    min-height: 64px;
+    font-size: 13px;
+  }
+
+  .promise-track {
+    animation-duration: 20s;
   }
 
   .section-heading {
@@ -1591,8 +1632,8 @@
   }
 
   .book-card-info {
-    flex-direction: column;
-    gap: 10px;
+    gap: 12px;
+    padding-top: 16px;
   }
 
   .book-card-info h3 {
@@ -1743,24 +1784,69 @@
 .book-card-buy {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 14%, transparent);
 }
 
 .card-add-btn {
-  border: 1px solid color-mix(in srgb, var(--ink) 25%, transparent);
-  background: transparent;
-  color: var(--ink);
-  padding: 6px 14px;
+  flex: none;
+  height: 38px;
+  padding: 0 16px 0 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--ink);
   border-radius: 999px;
+  background: var(--ink);
+  color: #fffaf4;
   font-size: 13px;
   font-weight: 500;
-  transition: all 0.2s ease;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.card-add-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
 }
 
 .card-add-btn:hover {
-  background: var(--ink);
-  color: var(--paper);
-  border-color: var(--ink);
+  background: var(--coral);
+  border-color: var(--coral);
+  color: var(--ink);
+}
+
+.card-add-btn:active {
+  transform: scale(0.96);
+}
+
+.card-add-btn:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+@media (max-width: 450px) {
+  .book-card-info strong {
+    font-size: 17px;
+  }
+
+  .card-add-btn {
+    height: 34px;
+    padding: 0 12px 0 10px;
+    font-size: 12px;
+  }
 }
 
 /* Bag Backdrop & Drawer */
@@ -3049,7 +3135,91 @@
   transform: translate(3px, -3px);
 }
 
-@media (max-width: 1050px) {
+/* Tablets: the home page shows two rows of three (6 books); the Bookshelf page still shows every book. */
+@media (max-width: 1050px) and (min-width: 761px) {
+  #books .book-grid .book-card:nth-child(n + 7) {
+    display: none;
+  }
+}
+
+/* Tablets: keep the three arches side by side, just scaled down. */
+@media (max-width: 1050px) and (min-width: 761px) {
+  .shelves-grid {
+    gap: 14px;
+  }
+
+  .shelf-card {
+    min-height: 640px;
+  }
+
+  .shelf-copy {
+    padding: 44px 14px 0;
+  }
+
+  /* Narrower label so it wraps inside the curved top instead of being clipped. */
+  .shelf-eyebrow {
+    max-width: 72%;
+    line-height: 1.6;
+  }
+
+  .shelf-copy h3 {
+    max-width: 85%;
+    margin: 10px auto 14px;
+    font-size: clamp(24px, 3.3vw, 34px);
+  }
+
+  .shelf-highlights {
+    margin-top: 18px;
+  }
+
+  .shelf-highlights li {
+    padding: 10px 3px;
+  }
+
+  .shelf-highlights strong {
+    font-size: clamp(16px, 2.3vw, 22px);
+  }
+
+  .shelf-highlights span {
+    font-size: 8.5px;
+    letter-spacing: 0.02em;
+  }
+
+  .shelf-stage {
+    min-height: 230px;
+    margin-top: 10px;
+  }
+
+  .shelf-sun {
+    width: clamp(140px, 19vw, 200px);
+  }
+
+  .shelf-covers {
+    width: clamp(84px, 11vw, 120px);
+  }
+
+  .shelf-footer {
+    padding: 0 14px 18px;
+    gap: 16px;
+  }
+
+  .shelf-footer blockquote {
+    padding-left: 10px;
+    font-size: 13px;
+  }
+
+  .shelf-cta {
+    padding: 12px 14px;
+    font-size: 12px;
+  }
+
+  .shelf-cta small {
+    display: none;
+  }
+}
+
+/* Phones: stack the arches. */
+@media (max-width: 760px) {
   .shelves-grid {
     grid-template-columns: minmax(0, 1fr);
     max-width: 560px;
@@ -3140,18 +3310,15 @@
   color: var(--coral);
 }
 
-.shelf-toolbar {
-  margin: -20px 0 28px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 14px 20px;
+/* Search sits at the very top of the Bookshelf page, right under the navbar. */
+.bookshelf-page {
+  padding-top: 32px;
 }
 
 .shelf-search {
-  flex: 1 1 260px;
-  max-width: 420px;
-  padding: 0 18px;
+  width: 100%;
+  margin: 0 0 56px;
+  padding: 0 22px;
   border: 1px solid color-mix(in srgb, var(--ink) 25%, transparent);
   border-radius: 999px;
   display: flex;
@@ -3166,12 +3333,26 @@
 
 .shelf-search input {
   width: 100%;
-  padding: 12px 0;
+  padding: 16px 0;
   border: 0;
   outline: none;
   background: transparent;
   color: var(--ink);
-  font-size: 14px;
+  font-size: 15px;
+}
+
+/* Shelf tabs on the left, language switch on the right, same row. */
+.shelf-filters {
+  margin-bottom: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+}
+
+.shelf-filters .category-tabs {
+  margin-bottom: 0;
 }
 
 .shelf-pills {
@@ -3194,23 +3375,6 @@
 .shelf-pill.is-active {
   background: #fffaf4;
   box-shadow: 0 1px 4px rgba(18, 63, 72, 0.15);
-}
-
-.shelf-sort {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13px;
-}
-
-.shelf-sort select {
-  padding: 10px 14px;
-  border: 1px solid color-mix(in srgb, var(--ink) 25%, transparent);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--ink);
-  font-size: 13px;
 }
 
 .shelf-result-count {
@@ -3256,16 +3420,30 @@
 }
 
 @media (max-width: 760px) {
-  .shelf-toolbar {
-    margin-top: -12px;
+  .bookshelf-page {
+    padding-top: 20px;
   }
 
   .shelf-search {
-    max-width: none;
+    margin-bottom: 36px;
   }
 
-  .shelf-sort {
-    margin-left: 0;
+  /* Phones: keep the heading short — the intro paragraph is hidden. */
+  .bookshelf-intro {
+    display: none;
+  }
+
+  .bookshelf-page .section-heading {
+    margin-bottom: 32px;
+  }
+
+  .shelf-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .shelf-pills {
+    align-self: flex-start;
   }
 }
 

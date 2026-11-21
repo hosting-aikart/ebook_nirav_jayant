@@ -122,9 +122,9 @@ export function SiteFooter({ onHome }: { onHome: boolean }) {
 
       <div className="footer-bottom">
         <small>
-          © {year} {SITE_NAME}. All rights reserved.
+          All rights reserved.
         </small>
-        <small>Made with stillness in India</small>
+        <small></small>
       </div>
     </footer>
   );

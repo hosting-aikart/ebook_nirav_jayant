@@ -147,12 +147,20 @@ export default function App() {
           </div>
         </section>
 
-        <section className="promise-strip" aria-label="Store benefits">
-          <span>Thoughtfully written</span>
-          <i />
-          <span>Delivered with care</span>
-          <i />
-          <span>Made for real life</span>
+        <section className="promise-strip" aria-label="Thoughtfully written · Delivered with care · Made for real life">
+          {/* The list is repeated so the scroll loops seamlessly; copies are hidden from screen readers. */}
+          <div className="promise-track" aria-hidden="true">
+            {Array.from({ length: 4 }, (_, copy) => (
+              <div className="promise-group" key={copy}>
+                <span>Thoughtfully written</span>
+                <i />
+                <span>Delivered with care</span>
+                <i />
+                <span>Made for real life</span>
+                <i />
+              </div>
+            ))}
+          </div>
         </section>
 
         <section className="books-section" id="books">
@@ -217,7 +225,10 @@ export default function App() {
                       }}
                       aria-label={`Add ${book.title} to bag`}
                     >
-                      + Add
+                      <svg viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="M8 3v10M3 8h10" />
+                      </svg>
+                      Add
                     </button>
                   </div>
                 </div>
