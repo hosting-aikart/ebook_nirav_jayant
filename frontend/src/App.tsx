@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
 import { ArrowIcon, BookReader, Cover } from "./components/BookParts";
 import { SiteFooter, SiteHeader } from "./components/SiteChrome";
-import { BagDrawer } from "./components/BagDrawer";
-import { OrderSuccessModal } from "./components/OrderSuccessModal";
-import { categories, fallbackBooks, type Book, type Category } from "./data/books";
+import { BagLayer } from "./components/BagLayer";
+import { categories, type Book, type Category } from "./data/books";
+import { useBag } from "./lib/bag";
 import { fetchBooks } from "./lib/books";
-import { supabase } from "./lib/supabase";
-import type { CartItem, OrderConfirmation } from "./types";
 
 // Set to an image path (e.g. "/assets/about/nirav-jayant.jpg") once the photo is ready.
 const ABOUT_PHOTO: string | null = "/assets/nirav-sir.png";
@@ -73,8 +71,8 @@ const shelves: Shelf[] = [
 export default function App() {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [activeCategory, setActiveCategory] = useState<"all" | Category>("all");
-  // With Supabase configured, start empty so removed books never flash on screen.
-  const [allBooks, setAllBooks] = useState<Book[]>(supabase ? [] : fallbackBooks);
+  // Start empty so books removed in the admin never flash on screen; the built-in list is the fallback.
+  const [allBooks, setAllBooks] = useState<Book[]>([]);
 
   useEffect(() => {
     fetchBooks().then(setAllBooks);
@@ -83,67 +81,16 @@ export default function App() {
   // The home page shows only books marked "Show on home page"; every book is on /bookshelf.
   const books = allBooks.filter((book) => book.featured);
 
-  const [cart, setCart] = useState<CartItem[]>(() => {
-    try {
-      const saved = localStorage.getItem("still_cart");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-  const [isBagOpen, setIsBagOpen] = useState(false);
-  const [orderSuccess, setOrderSuccess] = useState<OrderConfirmation | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("still_cart", JSON.stringify(cart));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [cart]);
-
-  const addToBag = (book: Book) => {
-    setCart((prev) => {
-      const exists = prev.find((item) => item.book.id === book.id);
-      if (exists) {
-        return prev.map((item) =>
-          item.book.id === book.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-      return [...prev, { book, quantity: 1 }];
-    });
-    setToastMessage(`"${book.title}" added to your bag`);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 3000);
-  };
-
-  const updateQuantity = (bookId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromBag(bookId);
-      return;
-    }
-    setCart((prev) =>
-      prev.map((item) =>
-        item.book.id === bookId ? { ...item, quantity } : item
-      )
-    );
-  };
-
-  const removeFromBag = (bookId: string) => {
-    setCart((prev) => prev.filter((item) => item.book.id !== bookId));
-  };
-
-  const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const bag = useBag(allBooks);
 
   const visibleBooks =
     activeCategory === "all" ? books : books.filter((book) => book.category === activeCategory);
 
+  // Only lock while the reader is open, so closing it never unlocks scrolling
+  // under a modal that opens at the same moment (e.g. the order confirmation).
   useEffect(() => {
-    document.body.style.overflow = selectedBook ? "hidden" : "";
+    if (!selectedBook) return;
+    document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "";
     };
@@ -154,7 +101,7 @@ export default function App() {
 
   return (
     <div className="site-shell">
-      <SiteHeader onHome bagCount={totalCartCount} onOpenBag={() => setIsBagOpen(true)} />
+      <SiteHeader onHome bagCount={bag.count} onOpenBag={bag.open} />
 
       <main>
         <section className="hero" id="top">
@@ -266,7 +213,7 @@ export default function App() {
                       className="card-add-btn"
                       onClick={(e) => {
                         e.stopPropagation();
-                        addToBag(book);
+                        bag.add(book);
                       }}
                       aria-label={`Add ${book.title} to bag`}
                     >
@@ -485,42 +432,15 @@ export default function App() {
         <BookReader
           book={selectedBook}
           onClose={() => setSelectedBook(null)}
-          onAddToBag={addToBag}
+          onAddToBag={bag.add}
+          onOrderComplete={(receipt) => {
+            setSelectedBook(null);
+            bag.showReceipt(receipt);
+          }}
         />
       )}
 
-      <BagDrawer
-        isOpen={isBagOpen}
-        onClose={() => setIsBagOpen(false)}
-        cart={cart}
-        onUpdateQuantity={updateQuantity}
-        onRemoveItem={removeFromBag}
-        onPaymentSuccess={(order) => {
-          setOrderSuccess(order);
-          setCart([]);
-        }}
-        onBrowseBooks={scrollToBooks}
-      />
-
-      {orderSuccess && (
-        <OrderSuccessModal
-          order={orderSuccess}
-          onClose={() => setOrderSuccess(null)}
-        />
-      )}
-
-      {toastMessage && (
-        <div className="still-toast" role="status">
-          <span>{toastMessage}</span>
-          <button
-            type="button"
-            className="still-toast-btn"
-            onClick={() => setIsBagOpen(true)}
-          >
-            View Bag
-          </button>
-        </div>
-      )}
+      <BagLayer bag={bag} onBrowseBooks={scrollToBooks} />
     </div>
   );
 }

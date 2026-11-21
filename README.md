@@ -7,71 +7,43 @@ A mindful digital e-book platform featuring interactive 3D flip-book reading pre
 ## 🛠 Tech Stack
 
 * **Frontend**: React 19, TypeScript, Vite, Tailwind CSS v4
-* **Backend**: Node.js, Express, TypeScript, Razorpay Node SDK
-* **Payment Gateway**: Razorpay (UPI, Debit/Credit Cards, NetBanking, Wallets)
+* **Backend**: Node.js + Express 5 (TypeScript), PostgreSQL on **Neon**
+* **Payment Gateway**: Razorpay Standard Checkout (UPI, Debit/Credit Cards, NetBanking, Wallets)
 
 ---
 
-## 🚀 Quick Start Guide
+## 🚀 Quick Start
 
-### 🌟 Single Command Start (Recommended)
+1. Copy `backend/.env.example` to `backend/.env` and fill in the Neon connection string, Razorpay keys
+   and an admin email + password.
+2. Run:
+   ```bash
+   npm run install:all
+   npm run dev               # website http://localhost:5173 (API on :5000)
+   ```
+   The first start creates the database tables and loads the books.
 
-From the project root:
-```bash
-npm run dev
-```
-This concurrently starts:
-* **Frontend** (Vite) at `http://localhost:5173`
-* **Backend** (Express + Neon DB + Razorpay) at `http://localhost:5000`
+Admin panel: http://localhost:5173/admin. Full setup, webhook, test payments and deployment:
+**[backend/README.md](backend/README.md)**.
 
----
-
-### Manual Setup (Separate Terminals)
-
-#### 1. Backend Setup
-
-```bash
-cd backend
-npm install
-npm run dev
-```
-
-Configure your credentials in `backend/.env`:
-```env
-PORT=5000
-FRONTEND_URL=http://localhost:5173
-DATABASE_URL=postgresql://YOUR_NEON_USER:YOUR_NEON_PASSWORD@YOUR_NEON_HOST/neondb?sslmode=require
-RAZORPAY_KEY_ID=rzp_test_YOUR_KEY_ID
-RAZORPAY_KEY_SECRET=YOUR_KEY_SECRET
-```
-> **Note**: If left with placeholder keys, the backend automatically runs in **Developer Demo Mode**, allowing you to test the complete order generation and payment verification workflow without real credentials.
-
----
-
-#### 2. Frontend Setup
-
-In a new terminal:
-```bash
-cd frontend
-npm install
-npm run dev
-```
-Open `http://localhost:5173` in your browser.
+Production: `npm run build` then `npm start` runs one server for both the website and the API.
 
 ---
 
 ## 💳 Razorpay Payment Flow
 
-1. **Bag Management**:
-   * Add books to your bag directly from the bookshelf cards (`+ Add`) or from inside the 3D flip-book preview (`Add e-book to bag`).
-   * The header displays live count: `Bag (N)`.
-   * Open the serene slide-out drawer to review items, adjust quantities, or remove items.
-2. **Order Creation (`POST /api/create-order`)**:
-   * Customer enters their Name and Email (for e-book delivery).
-   * Backend validates all items and prices against canonical book data (tamper-proof) and creates a secure Razorpay Order.
-3. **Checkout Experience**:
-   * Launches Razorpay Checkout modal supporting UPI (Google Pay, PhonePe, Paytm), Cards, and NetBanking.
-4. **Signature Verification (`POST /api/verify-payment`)**:
-   * Razorpay payment ID and cryptographic HMAC-SHA256 signature are verified server-side.
-5. **Confirmation & Delivery**:
-   * Once verified, an order confirmation screen provides instant PDF and EPUB download links.
+Books are **printed copies delivered across India**.
+
+1. **Bag**: add books from the home page or the Bookshelf (`+ Add`, or *Add to bag* inside a book).
+   The bag is saved in the browser and shared between pages. *Buy book* inside a book skips the bag for a single copy.
+2. **Delivery details**: name, email, mobile number and delivery address (validated in the browser and again on the server).
+3. **Order creation** (`POST /api/checkout/order`): every price is read from the database, never from the browser.
+   A Razorpay order is created for the total and a pending order with its line items is saved.
+4. **Razorpay Checkout**: UPI (Google Pay, PhonePe, Paytm), cards, net banking and wallets. Failed attempts can be retried in the same window.
+5. **Verification** (`POST /api/checkout/verify`): the HMAC-SHA256 signature is checked, the payment amount is matched
+   to the order and captured if needed, and the order is marked **paid**.
+6. **Confirmation**: the customer sees their order, total, shipping address and order/payment IDs.
+7. **Webhook backup** (`POST /api/razorpay/webhook`): marks orders paid even if the customer closes the tab, and records failed payments.
+8. **Admin** (`/admin`): every paid order with its books and address, delivery status and tracking, CSV export.
+
+The Razorpay Key Secret stays on the server; the website never sees it.

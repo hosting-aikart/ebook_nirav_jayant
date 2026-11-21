@@ -1,6 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import type { Session } from "@supabase/supabase-js";
-import { supabase } from "../lib/supabase";
+import { adminApi, loadSession, onSessionChange, signIn, signOut, type AdminSession } from "./session";
 import BooksAdmin from "./BooksAdmin";
 import Dashboard from "./Dashboard";
 import OrdersAdmin from "./OrdersAdmin";
@@ -29,9 +28,12 @@ function Login() {
     e.preventDefault();
     setBusy(true);
     setError("");
-    const { error } = await supabase!.auth.signInWithPassword({ email, password });
-    if (error) setError(error.message);
-    setBusy(false);
+    try {
+      await signIn(email, password);
+    } catch (err) {
+      setError((err as Error).message);
+      setBusy(false);
+    }
   };
 
   return (
@@ -59,65 +61,19 @@ function Login() {
 }
 
 export default function AdminApp() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<AdminSession | null>(loadSession);
   const [tab, setTab] = useState<Tab>("dashboard");
 
   useEffect(() => {
-    if (!supabase) return;
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
-    });
-    const { data } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
-    return () => data.subscription.unsubscribe();
+    const unsubscribe = onSessionChange(setSession);
+    // A saved session may have expired; a 401 here signs out and shows the sign-in screen.
+    if (loadSession()) adminApi("/me").catch(() => {});
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
-  useEffect(() => {
-    if (!supabase || !session) return setIsAdmin(null);
-    supabase
-      .from("admins")
-      .select("user_id")
-      .eq("user_id", session.user.id)
-      .maybeSingle()
-      .then(({ data }) => setIsAdmin(Boolean(data)));
-  }, [session]);
-
-  if (!supabase) {
-    return (
-      <Shell>
-        <div className="mx-auto max-w-xl p-10">
-          <h1 className="mb-3 text-2xl font-semibold">Admin panel not configured</h1>
-          <p className="text-slate-600">
-            Create <code>frontend/.env</code> with <code>VITE_SUPABASE_URL</code> and{" "}
-            <code>VITE_SUPABASE_ANON_KEY</code> (see <code>.env.example</code>), then restart the dev server.
-          </p>
-        </div>
-      </Shell>
-    );
-  }
-
-  if (loading) return <Shell>{null}</Shell>;
   if (!session) return <Login />;
-  if (isAdmin === null) return <Shell>{null}</Shell>;
-
-  if (!isAdmin) {
-    return (
-      <Shell>
-        <div className="mx-auto max-w-xl p-10">
-          <h1 className="mb-3 text-2xl font-semibold">No admin access</h1>
-          <p className="mb-6 text-slate-600">
-            {session.user.email} is signed in but is not an admin. Add this user to the{" "}
-            <code>admins</code> table (see backend/README.md).
-          </p>
-          <Button variant="ghost" onClick={() => supabase!.auth.signOut()}>
-            Sign out
-          </Button>
-        </div>
-      </Shell>
-    );
-  }
 
   return (
     <Shell>
@@ -141,8 +97,8 @@ export default function AdminApp() {
             <a href="/" target="_blank" rel="noreferrer" className="hover:text-slate-900">
               View site ↗
             </a>
-            <span className="hidden sm:inline">{session.user.email}</span>
-            <Button variant="ghost" onClick={() => supabase!.auth.signOut()}>
+            <span className="hidden sm:inline">{session.email}</span>
+            <Button variant="ghost" onClick={signOut}>
               Sign out
             </Button>
           </div>

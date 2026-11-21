@@ -1,24 +1,31 @@
-import { OrderConfirmation } from "../types";
+import { useEffect } from "react";
+import type { OrderReceipt } from "../lib/checkout";
 
 interface OrderSuccessModalProps {
-  order: OrderConfirmation;
+  order: OrderReceipt;
   onClose: () => void;
 }
 
+const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+
 export function OrderSuccessModal({ order, onClose }: OrderSuccessModalProps) {
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+
+  const { shipTo } = order;
+  const firstName = shipTo.name.split(" ")[0] || "friend";
+
   return (
-    <div
-      className="order-backdrop"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="order-success-title"
-    >
+    <div className="order-backdrop" role="dialog" aria-modal="true" aria-labelledby="order-success-title">
       <div className="order-modal">
-        <button
-          className="close-button"
-          onClick={onClose}
-          aria-label="Close confirmation dialog"
-        >
+        <button className="close-button" onClick={onClose} aria-label="Close confirmation">
           <span />
           <span />
         </button>
@@ -39,13 +46,41 @@ export function OrderSuccessModal({ order, onClose }: OrderSuccessModalProps) {
         </div>
 
         <span className="eyebrow">ORDER CONFIRMED</span>
-        <h2 id="order-success-title">Thank you, {order.customer.name}</h2>
+        <h2 id="order-success-title">Thank you, {firstName} 🙏</h2>
         <p className="order-lead">
-          Your payment was received successfully. We have prepared your mindful reading
-          materials below and sent a confirmation to <strong>{order.customer.email}</strong>.
+          We've received your payment of <strong>{inr(order.total)}</strong>. Your books will be packed with
+          care and shipped to the address below.
         </p>
 
-        {/* Receipt pill */}
+        <div className="order-items">
+          {order.items.map((item) => (
+            <div key={item.title} className="order-item">
+              <span>
+                {item.title}
+                {item.quantity > 1 && <small> × {item.quantity}</small>}
+              </span>
+              <span>{inr(item.unitPrice * item.quantity)}</span>
+            </div>
+          ))}
+          <div className="order-item order-item-total">
+            <span>Total paid</span>
+            <strong>{inr(order.total)}</strong>
+          </div>
+        </div>
+
+        <div className="order-ship-to">
+          <span>Shipping to</span>
+          <p>
+            <strong>{shipTo.name}</strong>
+            <br />
+            {shipTo.address}
+            <br />
+            {shipTo.city}, {shipTo.state} – {shipTo.pincode}
+            <br />
+            {shipTo.phone}
+          </p>
+        </div>
+
         <div className="order-meta-box">
           <div>
             <span>Order ID</span>
@@ -53,58 +88,22 @@ export function OrderSuccessModal({ order, onClose }: OrderSuccessModalProps) {
           </div>
           <div>
             <span>Payment ID</span>
-            <strong>{order.paymentId}</strong>
+            <strong>{order.paymentId ?? "—"}</strong>
           </div>
         </div>
 
-        {/* Download links */}
-        <div className="order-downloads-section">
-          <h3>Your Digital E-Books</h3>
-          <p className="order-download-hint">
-            Available in universal PDF and e-reader EPUB formats.
-          </p>
-
-          <div className="order-download-list">
-            {order.downloads.map((item) => (
-              <div key={item.id} className="order-download-item">
-                <div className="order-download-info">
-                  <span className="order-book-badge">E-Book</span>
-                  <h4>{item.title}</h4>
-                </div>
-                <div className="order-download-actions">
-                  <a
-                    href={item.pdfUrl}
-                    download
-                    className="order-btn-download"
-                    title={`Download PDF format of ${item.title}`}
-                    onClick={(e) => {
-                      // Trigger friendly notification or sample download
-                      e.preventDefault();
-                      alert(`Downloading PDF for "${item.title}". Enjoy your reading!`);
-                    }}
-                  >
-                    <span>Download PDF</span>
-                  </a>
-                  <a
-                    href={item.epubUrl}
-                    download
-                    className="order-btn-download order-btn-epub"
-                    title={`Download EPUB format of ${item.title}`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      alert(`Downloading EPUB for "${item.title}". Enjoy your reading!`);
-                    }}
-                  >
-                    <span>EPUB</span>
-                  </a>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <p className="order-footnote">
+          Please keep your order ID for reference.
+          {order.email && (
+            <>
+              {" "}
+              We'll contact you at <strong>{order.email}</strong> if we need anything for your delivery.
+            </>
+          )}
+        </p>
 
         <button className="primary-button wide-button" onClick={onClose}>
-          Return to Bookshelf
+          Continue browsing
         </button>
       </div>
     </div>

@@ -1,155 +1,178 @@
-import { useState, type FormEvent } from "react";
-import type { Book } from "../data/books";
-import { supabase } from "../lib/supabase";
-
-type RazorpayResponse = {
-  razorpay_order_id: string;
-  razorpay_payment_id: string;
-  razorpay_signature: string;
-};
-
-declare global {
-  interface Window {
-    Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
-  }
-}
-
-function loadRazorpay(): Promise<boolean> {
-  if (window.Razorpay) return Promise.resolve(true);
-  return new Promise((resolve) => {
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-}
-
-const inputClass =
-  "w-full rounded-full border border-[color-mix(in_srgb,var(--ink)_25%,transparent)] bg-white/70 px-5 py-3 text-[15px] outline-none focus:border-[var(--ink)]";
+import { useEffect, useState, type FormEvent } from "react";
+import {
+  CheckoutError,
+  INDIAN_STATES,
+  loadRazorpay,
+  startCheckout,
+  useShippingDetails,
+  validateDetails,
+  type CheckoutLine,
+  type OrderReceipt,
+  type ShippingDetails,
+} from "../lib/checkout";
 
 type Status =
   | { kind: "form" }
   | { kind: "busy"; message: string }
-  | { kind: "paid" }
+  | { kind: "notice"; message: string } // payment window closed by the customer
   | { kind: "error"; message: string };
 
-export default function Checkout({ book, onCancel }: { book: Book; onCancel: () => void }) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [pincode, setPincode] = useState("");
+/**
+ * Delivery details + "Pay with Razorpay". Used by "Buy book" in the reader
+ * and by the shopping bag. Calls onPaid once the payment is verified.
+ */
+export default function Checkout({
+  lines,
+  onPaid,
+  onCancel,
+  cancelLabel = "Cancel",
+}: {
+  lines: CheckoutLine[];
+  onPaid: (receipt: OrderReceipt) => void;
+  onCancel?: () => void;
+  cancelLabel?: string;
+}) {
+  const [details, setDetails] = useShippingDetails();
   const [status, setStatus] = useState<Status>({ kind: "form" });
+  const total = lines.reduce((sum, l) => sum + l.book.price * l.quantity, 0);
 
-  if (!supabase) {
-    return (
-      <p className="reader-note">
-        Checkout is not configured yet. Add your Supabase keys to <code>frontend/.env</code>.
-      </p>
-    );
-  }
-  const db = supabase;
+  // Fetch checkout.js while the customer fills in the form.
+  useEffect(() => {
+    loadRazorpay();
+  }, []);
+
+  const busy = status.kind === "busy";
+  const update = (key: keyof ShippingDetails, value: string) => {
+    setDetails((d) => ({ ...d, [key]: value }));
+    if (status.kind !== "form") setStatus({ kind: "form" }); // hide an old message once they start fixing it
+  };
+  const field = (key: keyof ShippingDetails) => ({
+    value: details[key],
+    disabled: busy,
+    onChange: (e: { target: { value: string } }) => update(key, e.target.value),
+  });
 
   const pay = async (event: FormEvent) => {
     event.preventDefault();
-    if (!/^[6-9]\d{9}$/.test(phone.replace(/\D/g, "").slice(-10))) {
-      return setStatus({ kind: "error", message: "Please enter a valid 10-digit mobile number." });
-    }
-    if (!/^\d{6}$/.test(pincode.trim())) {
-      return setStatus({ kind: "error", message: "Please enter a valid 6-digit PIN code." });
-    }
-    setStatus({ kind: "busy", message: "Preparing secure payment…" });
+    const problem = validateDetails(details);
+    if (problem) return setStatus({ kind: "error", message: problem });
+    if (!lines.length) return setStatus({ kind: "error", message: "Your bag is empty." });
 
-    const [loaded, created] = await Promise.all([
-      loadRazorpay(),
-      db.functions.invoke("create-order", {
-        body: { bookId: book.id, name, email, phone, address, city, state, pincode },
-      }),
-    ]);
-    if (!loaded) return setStatus({ kind: "error", message: "Could not load the payment window." });
-    if (created.error || created.data?.error) {
-      const message =
-        created.data?.error ??
-        (await created.error?.context?.json?.().catch(() => null))?.error ??
-        "Could not start payment. Please try again.";
-      return setStatus({ kind: "error", message });
+    try {
+      const receipt = await startCheckout({
+        lines,
+        details,
+        onStage: (message) => setStatus({ kind: "busy", message }),
+      });
+      setStatus({ kind: "form" });
+      onPaid(receipt);
+    } catch (err) {
+      const kind = err instanceof CheckoutError ? err.kind : "error";
+      const message = (err as Error).message || "Something went wrong. Please try again.";
+      setStatus(kind === "cancelled" ? { kind: "notice", message } : { kind: "error", message });
     }
-
-    const order = created.data as {
-      keyId: string;
-      razorpayOrderId: string;
-      amount: number;
-      currency: string;
-    };
-
-    const rzp = new window.Razorpay!({
-      key: order.keyId,
-      order_id: order.razorpayOrderId,
-      amount: order.amount,
-      currency: order.currency,
-      name: "Sw. Nirav Jayant",
-      description: book.title,
-      prefill: { name, email, contact: phone },
-      theme: { color: "#123f48" },
-      modal: { ondismiss: () => setStatus({ kind: "form" }) },
-      handler: async (response: RazorpayResponse) => {
-        setStatus({ kind: "busy", message: "Confirming your payment…" });
-        const verified = await db.functions.invoke("verify-payment", { body: response });
-        if (verified.error || !verified.data?.ok) {
-          return setStatus({
-            kind: "error",
-            message:
-              "We received your payment but couldn't confirm it automatically. Don't worry — your order is safe and we'll email you a confirmation shortly.",
-          });
-        }
-        setStatus({ kind: "paid" });
-      },
-    });
-    rzp.open();
   };
 
-  if (status.kind === "paid") {
-    return (
-      <div className="grid gap-3">
-        <p className="text-lg font-medium">Thank you! Your payment was successful. 🙏</p>
-        <p className="reader-note">
-          Your copy of <strong>{book.title}</strong> will be shipped to {address}, {city} – {pincode}.
-        </p>
-        <p className="reader-note">We'll send order and delivery updates to {email}.</p>
-      </div>
-    );
-  }
-
-  const busy = status.kind === "busy";
   return (
-    <form className="grid gap-3" onSubmit={pay}>
-      <input className={inputClass} placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} required disabled={busy} />
-      <input className={inputClass} type="email" placeholder="Email (for order updates)" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={busy} />
-      <input className={inputClass} type="tel" placeholder="Mobile number (for delivery)" value={phone} onChange={(e) => setPhone(e.target.value)} required disabled={busy} />
-      <textarea
-        className={`${inputClass} rounded-3xl`}
-        rows={2}
-        placeholder="Delivery address (house no., street, area)"
-        value={address}
-        onChange={(e) => setAddress(e.target.value)}
-        required
-        disabled={busy}
-      />
-      <div className="grid grid-cols-2 gap-3">
-        <input className={inputClass} placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} required disabled={busy} />
-        <input className={inputClass} placeholder="State" value={state} onChange={(e) => setState(e.target.value)} required disabled={busy} />
+    <form className="checkout-form" onSubmit={pay} noValidate>
+      <div className="checkout-field">
+        <label htmlFor="co-name">Full name</label>
+        <input id="co-name" autoComplete="name" required {...field("name")} />
       </div>
-      <input className={inputClass} inputMode="numeric" maxLength={6} placeholder="PIN code" value={pincode} onChange={(e) => setPincode(e.target.value.replace(/\D/g, ""))} required disabled={busy} />
-      {status.kind === "error" && <p className="text-sm text-[#c0392b]">{status.message}</p>}
-      <button className="primary-button wide-button" type="submit" disabled={busy}>
-        {busy ? status.message : `Pay ₹${book.price}`}
+      <div className="checkout-row">
+        <div className="checkout-field">
+          <label htmlFor="co-email">Email</label>
+          <input id="co-email" type="email" autoComplete="email" required {...field("email")} />
+        </div>
+        <div className="checkout-field">
+          <label htmlFor="co-phone">Mobile number</label>
+          <input
+            id="co-phone"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            placeholder="98765 43210"
+            maxLength={16}
+            required
+            {...field("phone")}
+          />
+        </div>
+      </div>
+      <div className="checkout-field">
+        <label htmlFor="co-address">Delivery address</label>
+        <textarea
+          id="co-address"
+          rows={2}
+          autoComplete="street-address"
+          placeholder="House no., building, street, area"
+          maxLength={500}
+          required
+          {...field("address")}
+        />
+      </div>
+      <div className="checkout-row checkout-row-3">
+        <div className="checkout-field">
+          <label htmlFor="co-city">City</label>
+          <input id="co-city" autoComplete="address-level2" required {...field("city")} />
+        </div>
+        <div className="checkout-field">
+          <label htmlFor="co-state">State</label>
+          <select id="co-state" autoComplete="address-level1" required {...field("state")}>
+            <option value="" disabled>
+              Select…
+            </option>
+            {/* Keep a value typed in earlier even if it isn't in the list. */}
+            {details.state && !INDIAN_STATES.includes(details.state) && <option>{details.state}</option>}
+            {INDIAN_STATES.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+        <div className="checkout-field">
+          <label htmlFor="co-pincode">PIN code</label>
+          <input
+            id="co-pincode"
+            inputMode="numeric"
+            autoComplete="postal-code"
+            required
+            {...field("pincode")}
+            // Strip spaces etc. before limiting to 6, so pasting "411 001" works.
+            onChange={(e) => update("pincode", e.target.value.replace(/\D/g, "").slice(0, 6))}
+          />
+        </div>
+      </div>
+
+      {(status.kind === "error" || status.kind === "notice") && (
+        <p className={status.kind === "error" ? "checkout-alert" : "checkout-notice"} role="alert">
+          {status.message}
+        </p>
+      )}
+
+      <button className="primary-button checkout-pay" type="submit" disabled={busy}>
+        {busy ? (
+          <span className="btn-spinner-wrap">
+            <span className="btn-spinner" /> {status.message}
+          </span>
+        ) : (
+          <>
+            Pay ₹{total.toLocaleString("en-IN")}
+            <svg viewBox="0 0 18 18" aria-hidden="true" className="pay-lock-icon">
+              <path
+                d="M5 8V6a4 4 0 0 1 8 0v2m-9 0h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.4"
+              />
+            </svg>
+          </>
+        )}
       </button>
-      <button type="button" className="reader-note underline" onClick={onCancel} disabled={busy}>
-        Cancel
-      </button>
+      <p className="checkout-trust">Secured by Razorpay · UPI · Cards · Net banking · Wallets</p>
+      {onCancel && (
+        <button type="button" className="checkout-cancel" onClick={onCancel} disabled={busy}>
+          {cancelLabel}
+        </button>
+      )}
     </form>
   );
 }

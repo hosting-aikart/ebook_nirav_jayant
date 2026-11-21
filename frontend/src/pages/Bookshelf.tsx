@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowIcon, BookReader, Cover } from "../components/BookParts";
+import { BagLayer } from "../components/BagLayer";
 import { SiteFooter, SiteHeader } from "../components/SiteChrome";
-import { categories, fallbackBooks, languages, type Book, type Category, type Language } from "../data/books";
+import { categories, languages, type Book, type Category, type Language } from "../data/books";
+import { useBag } from "../lib/bag";
 import { fetchBooks } from "../lib/books";
-import { supabase } from "../lib/supabase";
 
 type CategoryFilter = "all" | Category;
 type LanguageFilter = "all" | Language;
@@ -22,13 +23,14 @@ function readCategory(): CategoryFilter {
 }
 
 export default function Bookshelf() {
-  const [books, setBooks] = useState<Book[]>(supabase ? [] : fallbackBooks);
-  const [loading, setLoading] = useState(Boolean(supabase));
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [category, setCategory] = useState<CategoryFilter>(readCategory);
   const [language, setLanguage] = useState<LanguageFilter>("all");
   const [sort, setSort] = useState<Sort>("featured");
   const [query, setQuery] = useState("");
+  const bag = useBag(books);
 
   useEffect(() => {
     document.title = "Bookshelf · Sw. Nirav Jayant";
@@ -46,8 +48,11 @@ export default function Bookshelf() {
     window.history.replaceState(null, "", url);
   }, [category]);
 
+  // Only lock while the reader is open, so closing it never unlocks scrolling
+  // under a modal that opens at the same moment (e.g. the order confirmation).
   useEffect(() => {
-    document.body.style.overflow = selectedBook ? "hidden" : "";
+    if (!selectedBook) return;
+    document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "";
     };
@@ -81,7 +86,7 @@ export default function Bookshelf() {
 
   return (
     <div className="site-shell">
-      <SiteHeader onHome={false} />
+      <SiteHeader onHome={false} bagCount={bag.count} onOpenBag={bag.open} />
 
       <main className="books-section bookshelf-page">
         <div className="section-heading">
@@ -196,7 +201,17 @@ export default function Bookshelf() {
                     <h3>{book.title}</h3>
                     <p>{book.subtitle}</p>
                   </div>
-                  <strong>₹{book.price}</strong>
+                  <div className="book-card-buy">
+                    <strong>₹{book.price}</strong>
+                    <button
+                      type="button"
+                      className="card-add-btn"
+                      onClick={() => bag.add(book)}
+                      aria-label={`Add ${book.title} to bag`}
+                    >
+                      + Add
+                    </button>
+                  </div>
                 </div>
               </article>
             ))}
@@ -206,7 +221,19 @@ export default function Bookshelf() {
 
       <SiteFooter onHome={false} />
 
-      {selectedBook && <BookReader book={selectedBook} onClose={() => setSelectedBook(null)} />}
+      {selectedBook && (
+        <BookReader
+          book={selectedBook}
+          onClose={() => setSelectedBook(null)}
+          onAddToBag={bag.add}
+          onOrderComplete={(receipt) => {
+            setSelectedBook(null);
+            bag.showReceipt(receipt);
+          }}
+        />
+      )}
+
+      <BagLayer bag={bag} onBrowseBooks={() => window.scrollTo({ top: 0, behavior: "smooth" })} />
     </div>
   );
 }

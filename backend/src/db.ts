@@ -1,151 +1,75 @@
-import { PrismaClient, OrderStatus } from "@prisma/client";
-import dotenv from "dotenv";
+import fs from "node:fs/promises";
+import path from "node:path";
+import pg from "pg";
+import { backendDir, config } from "./config.js";
+import { HttpError } from "./http.js";
 
-dotenv.config();
+// pg already treats sslmode=require (Neon's default) as full certificate verification and
+// warns that this will change in pg v9. Asking for verify-full keeps today's stricter checks.
+const connectionString = config.databaseUrl.replace(/([?&]sslmode=)(require|prefer|verify-ca)\b/, "$1verify-full");
 
-const dbUrl = process.env.DATABASE_URL || "";
+const pool = connectionString
+  ? new pg.Pool({
+      connectionString,
+      max: 5,
+      // Close idle connections before Neon puts the database to sleep (after 5 minutes).
+      idleTimeoutMillis: 60_000,
+      connectionTimeoutMillis: 20_000,
+    })
+  : null;
 
-export const isDbConfigured = Boolean(
-  dbUrl &&
-  !dbUrl.includes("YOUR_NEON_POSTGRES_URL") &&
-  !dbUrl.includes("placeholder")
-);
+// A dropped idle connection must not crash the server; the next query opens a new one.
+pool?.on("error", (err) => console.warn("Database connection closed:", err.message));
 
-export const prisma = isDbConfigured ? new PrismaClient() : null;
+export const dbConfigured = Boolean(pool);
 
-export interface SaveOrderPayload {
-  orderId: string;
-  amount: number; // in paise
-  currency: string;
-  customer: {
-    name: string;
-    email: string;
-    phone?: string;
-  };
-  items: {
-    id: string;
-    title: string;
-    price: number;
-    quantity: number;
-  }[];
+export function db(): pg.Pool {
+  if (!pool) throw new HttpError(503, "The store database isn't set up yet. Add DATABASE_URL to backend/.env.");
+  return pool;
 }
 
-// In-memory fallback if Neon connection string is not yet configured
-const inMemoryOrders = new Map<string, any>();
-
-export async function saveOrder(payload: SaveOrderPayload) {
-  if (isDbConfigured && prisma) {
-    try {
-      // 1. Upsert customer by unique email
-      const customer = await prisma.customer.upsert({
-        where: { email: payload.customer.email.toLowerCase().trim() },
-        update: {
-          name: payload.customer.name.trim(),
-          phone: payload.customer.phone?.trim() || undefined,
-        },
-        create: {
-          name: payload.customer.name.trim(),
-          email: payload.customer.email.toLowerCase().trim(),
-          phone: payload.customer.phone?.trim() || null,
-        },
-      });
-
-      // 2. Create the Order with nested OrderItems
-      const order = await prisma.order.create({
-        data: {
-          razorpayOrderId: payload.orderId,
-          amount: payload.amount,
-          currency: payload.currency,
-          status: OrderStatus.CREATED,
-          customerId: customer.id,
-          items: {
-            create: payload.items.map((item) => ({
-              bookId: item.id,
-              title: item.title,
-              price: item.price,
-              quantity: item.quantity,
-            })),
-          },
-        },
-        include: {
-          customer: true,
-          items: true,
-        },
-      });
-
-      return order;
-    } catch (error) {
-      console.error("[Database] Error saving order to PostgreSQL:", error);
-      throw error;
-    }
-  }
-
-  // Fallback to in-memory store
-  const stored = {
-    orderId: payload.orderId,
-    amount: payload.amount,
-    currency: payload.currency,
-    status: "CREATED",
-    customer: payload.customer,
-    items: payload.items,
-    createdAt: new Date().toISOString(),
-  };
-  inMemoryOrders.set(payload.orderId, stored);
-  return stored;
+export async function closeDb() {
+  await pool?.end();
 }
 
-export async function markOrderPaid(
-  razorpayOrderId: string,
-  razorpayPaymentId: string,
-  razorpaySignature: string
-) {
-  if (isDbConfigured && prisma) {
+/**
+ * Applies the SQL files in backend/db/migrations that haven't run yet, in name order,
+ * each in its own transaction. Safe to run from several processes at once.
+ */
+export async function migrate(log: (line: string) => void = console.log) {
+  const dir = path.join(backendDir, "db", "migrations");
+  const files = (await fs.readdir(dir)).filter((f) => f.endsWith(".sql")).sort();
+
+  const pool = db();
+  await pool.query(
+    "create table if not exists schema_migrations (version text primary key, applied_at timestamptz not null default now())",
+  );
+  const { rows } = await pool.query<{ version: string }>("select version from schema_migrations");
+  const applied = new Set(rows.map((r) => r.version));
+
+  for (const file of files) {
+    const version = file.replace(/\.sql$/, "");
+    if (applied.has(version)) continue;
+
+    const client = await pool.connect();
     try {
-      const updated = await prisma.order.update({
-        where: { razorpayOrderId },
-        data: {
-          razorpayPaymentId,
-          razorpaySignature,
-          status: OrderStatus.PAID,
-        },
-        include: {
-          customer: true,
-          items: true,
-        },
-      });
-      return updated;
-    } catch (error) {
-      console.error("[Database] Error updating order status in PostgreSQL:", error);
-      throw error;
+      await client.query("begin");
+      // Transaction-scoped lock: works through Neon's connection pooler, unlike a session lock.
+      await client.query("select pg_advisory_xact_lock(727274)");
+      const done = await client.query("select 1 from schema_migrations where version = $1", [version]);
+      if (done.rowCount) {
+        await client.query("rollback"); // another process applied it meanwhile
+        continue;
+      }
+      await client.query(await fs.readFile(path.join(dir, file), "utf8"));
+      await client.query("insert into schema_migrations (version) values ($1)", [version]);
+      await client.query("commit");
+      log(`  applied migration ${version}`);
+    } catch (err) {
+      await client.query("rollback").catch(() => {});
+      throw new Error(`Migration ${file} failed: ${(err as Error).message}`);
+    } finally {
+      client.release();
     }
   }
-
-  // Fallback to in-memory store
-  const order = inMemoryOrders.get(razorpayOrderId);
-  if (order) {
-    order.status = "PAID";
-    order.paymentId = razorpayPaymentId;
-    order.signature = razorpaySignature;
-    inMemoryOrders.set(razorpayOrderId, order);
-  }
-  return order;
-}
-
-export async function findOrder(orderId: string) {
-  if (isDbConfigured && prisma) {
-    try {
-      return await prisma.order.findUnique({
-        where: { razorpayOrderId: orderId },
-        include: {
-          customer: true,
-          items: true,
-        },
-      });
-    } catch (error) {
-      console.error("[Database] Error retrieving order from PostgreSQL:", error);
-      throw error;
-    }
-  }
-
-  return inMemoryOrders.get(orderId) || null;
 }

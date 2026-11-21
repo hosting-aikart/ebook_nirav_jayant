@@ -11,11 +11,9 @@ export default defineConfig({
     },
   },
   server: {
+    // The backend (npm run dev:backend) serves the books, checkout and admin API.
     proxy: {
-      "/api": {
-        target: "http://localhost:5000",
-        changeOrigin: true,
-      },
+      "/api": { target: "http://localhost:5000", changeOrigin: true },
     },
   },
 });

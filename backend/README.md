@@ -1,88 +1,95 @@
-# Backend: Supabase + Razorpay
+# Backend: Express + Neon Postgres + Razorpay
 
-This folder holds everything server-side for the store:
+A small Node.js server (`src/`) that the website talks to under `/api`:
 
 | Path | What it does |
 |---|---|
-| `supabase/migrations/…_init.sql` | Tables (`books`, `customers`, `orders`, `admins`), security rules, storage buckets |
-| `supabase/migrations/…_seed_books.sql` | Loads the original 8 books into the database |
-| `supabase/functions/create-order` | Checkout step 1: saves the customer and delivery address, creates a Razorpay order |
-| `supabase/functions/verify-payment` | Checkout step 2: verifies the payment and marks the order paid |
-| `supabase/functions/razorpay-webhook` | Backup: marks orders paid even if the customer closes the tab |
+| `src/checkout.ts` | Checkout: prices the bag from the database, creates the Razorpay order, verifies the payment, handles Razorpay's webhook |
+| `src/admin.ts` | Admin panel API (`/admin` on the site): sign-in, books, image uploads, orders, customers |
+| `src/app.ts` | Routes; in production it also serves the built website |
+| `src/db.ts` | Database connection (Neon) and the migration runner |
+| `db/migrations/*.sql` | Tables and the book catalogue. New files run automatically when the server starts |
 
-The admin panel lives in the frontend at **`/admin`** (`frontend/src/admin/`).
+The browser never talks to the database and never sees the Razorpay Key Secret.
+
+### How a payment works
+1. The customer adds books to the **Bag** (or taps **Buy book** for one copy) and enters their delivery address.
+2. `POST /api/checkout/order` looks up every price in the `books` table (the browser never sets the price),
+   creates a Razorpay order for the total and saves a **pending** order with its line items.
+3. Razorpay Checkout opens (UPI, cards, net banking, wallets). If a payment attempt fails, the customer can retry
+   in the same window.
+4. On success, `POST /api/checkout/verify` checks Razorpay's signature, captures the payment if it is only
+   authorised, marks the order **paid**, and the customer sees an order confirmation with the shipping address.
+5. The webhook (`POST /api/razorpay/webhook`) does the same in the background, so an order is still marked paid if
+   the customer closes the tab right after paying. Failed attempts are recorded with Razorpay's reason
+   (Admin → Orders → Failed).
 
 ---
 
-## One-time setup (about 20 minutes)
+## Setup
 
-### 1. Create the accounts
-- **Supabase** (free): https://supabase.com → New project. Save the database password.
-- **Razorpay**: https://dashboard.razorpay.com → switch to **Test mode** → Settings → API Keys → Generate key. You get a **Key ID** and a **Key Secret**.
+### 1. Accounts
+- **Neon** (free): https://neon.tech → New project → copy the connection string.
+  For production, create the project in the region closest to your customers.
+- **Razorpay**: https://dashboard.razorpay.com → Account & Settings → API Keys → Generate key.
+  Use **Test mode** keys (`rzp_test_…`) while developing: test payments are free. Live keys (`rzp_live_…`) charge real money.
 
-### 2. Install the Supabase CLI and push the database
+### 2. `backend/.env`
+Copy `backend/.env.example` to `backend/.env` (it is git-ignored) and fill in `DATABASE_URL`, the Razorpay keys
+and an admin email and password.
+
+### 3. Run it
+From the project root:
 ```bash
-npm install -g supabase          # or: brew install supabase/tap/supabase
-cd backend
-supabase login
-supabase link --project-ref YOUR-PROJECT-REF   # the ref is in your project URL
-supabase db push                               # creates tables + loads the 8 books
+npm run install:all
+npm run dev          # backend on :5000 + website on http://localhost:5173
 ```
+On start the server creates the tables and loads the books (only migrations that haven't run yet), and prints
+what is switched on: database, Razorpay test/live keys, webhook, admin sign-in.
+`npm run db:migrate` does the database step on its own.
 
-### 3. Add the secret keys and deploy the functions
-```bash
-supabase secrets set RAZORPAY_KEY_ID=rzp_test_xxx RAZORPAY_KEY_SECRET=xxx RAZORPAY_WEBHOOK_SECRET=pick-any-long-random-string
-supabase functions deploy create-order
-supabase functions deploy verify-payment
-supabase functions deploy razorpay-webhook
-```
+### 4. Admin panel
+Open http://localhost:5173/admin and sign in with `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `backend/.env`.
+Sessions last 12 hours; changing the password signs everyone out. After 10 wrong passwords, sign-in pauses for 15 minutes.
 
-### 4. Connect the website
-Copy `frontend/.env.example` to `frontend/.env` and fill in the values from Supabase → Project Settings → API:
-```
-VITE_SUPABASE_URL=https://YOUR-PROJECT-REF.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-public-key
-```
-Restart `npm run dev`.
-
-### 5. Create your admin login
-1. Supabase → Authentication → Users → **Add user** → enter your email and a strong password (tick "Auto confirm").
-2. Supabase → SQL Editor → run:
-   ```sql
-   insert into public.admins (user_id)
-   select id from auth.users where email = 'you@example.com';
-   ```
-3. Open http://localhost:5173/admin and sign in.
-
-Also turn **off** public sign-ups (Authentication → Sign In / Providers → "Allow new users to sign up"). Only admins need accounts.
-
-### 6. Shipping the books
+### 5. Shipping the books
 Books are printed copies delivered to the customer. At checkout the customer gives their mobile number and delivery address.
 Each paid order shows up in Admin → Orders with the full address. When you send it, set **Delivery** to "Shipped" and type the courier / tracking number. Set it to "Delivered" once it arrives.
 
-### 7. Set up the Razorpay webhook
-Razorpay Dashboard → Settings → Webhooks → Add:
-- URL: `https://YOUR-PROJECT-REF.supabase.co/functions/v1/razorpay-webhook`
-- Secret: the same `RAZORPAY_WEBHOOK_SECRET` you set in step 3
-- Events: `payment.captured`, `payment.failed`
+### 6. Razorpay webhook (once the site is online)
+Razorpay can only reach a public address, so set this up after deploying (or with a tunnel such as ngrok).
+Razorpay Dashboard → Account & Settings → Webhooks → Add, in the same mode (Test or Live) as your keys:
+- URL: `https://YOUR-SITE/api/razorpay/webhook`
+- Secret: any long random string; put the same string in `RAZORPAY_WEBHOOK_SECRET` and restart the server.
+- Events: `payment.authorized`, `payment.captured`, `payment.failed`, `order.paid`
 
-### 8. Test a purchase
-On the site, open a book → **Buy e-book** → fill in the form → pay with a Razorpay test card
-(`4111 1111 1111 1111`, any future expiry, any CVV) or the test UPI ID `success@razorpay`.
-The order then appears in Admin → Orders, marked "To ship".
+Checkout works without the webhook; it is the backup for customers who close the tab right after paying.
 
-### Going live
-Complete Razorpay KYC, generate **Live** keys, and re-run the `supabase secrets set` command with them. Recreate the webhook in Live mode too.
+### 7. Test a purchase
+Add a couple of books to the **Bag** → **Checkout** → fill in the delivery details → pay. The order then appears
+in Admin → Orders, marked "To ship", with every book listed.
 
-When you host the site (Vercel, Netlify, etc.), add an "SPA rewrite" so `/admin` serves `index.html`:
-- **Vercel**: `frontend/vercel.json` → `{ "rewrites": [{ "source": "/(.*)", "destination": "/" }] }`
-- **Netlify**: `frontend/public/_redirects` → `/*  /index.html  200`
+- **Test keys:** pay with a Razorpay test card (`4111 1111 1111 1111`, any future expiry, any CVV) or the test
+  UPI ID `success@razorpay`. Use `failure@razorpay` to see a failed payment (Admin → Orders → Failed, with the reason).
+  The current test cards are at https://razorpay.com/docs/payments/payments/test-card-details/
+- **Live keys:** test cards don't work. Make one small real payment, check it in Admin → Orders and the Razorpay
+  dashboard, then refund it from the Razorpay dashboard (Razorpay keeps its fee).
+
+### Deploying
+```bash
+npm run install:all
+npm run build        # builds the website and the server
+npm start            # one server: the website and /api on the same address
+```
+Set the same variables as in `backend/.env` in your host's settings (Render, Railway, a VPS, …), with `PORT` if
+the host requires it. Uploaded images are stored in the database, so the server keeps no files of its own.
+Payments are captured automatically whether your Razorpay account uses automatic or manual capture.
 
 ---
 
 ## Admin panel features
 - **Dashboard**: total revenue, this month's revenue, paid orders, customers, recent orders
-- **Books**: add, edit, hide/show, delete, upload cover, edit preview pages, change display order, set language.
+- **Books**: add, edit, hide/show, delete, upload cover and preview images, change display order, set language.
   Every visible book is listed on the **Bookshelf** page (`/bookshelf`). Tick **"Also show on home page"** to put it on the home page too; new books start as Bookshelf-only.
   Books that have orders can't be deleted (customer records are kept); use **Hide** instead.
 - **Orders**: delivery address for each order, delivery status (To ship / Shipped / Delivered / Cancelled) and tracking number, search, filters, export CSV (handy for printing shipping labels)
@@ -91,5 +98,5 @@ When you host the site (Vercel, Netlify, etc.), add an "SPA rewrite" so `/admin`
 ## Not built yet (good next steps)
 - Automatic order-confirmation and "shipped" emails (e.g. with [Resend](https://resend.com)). Today you see every order and address in Admin → Orders.
 - Delivery charges (today the book price is the full amount the customer pays)
+- Refunds from the admin panel (use the Razorpay dashboard for now)
 - Editing other site sections (hero text, about, shelves) from the admin panel
-- Shopping bag with several books in one payment
