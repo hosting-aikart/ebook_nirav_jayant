@@ -1,24 +1,9 @@
 -- ============================================================
 -- Still eBook Store — core schema
--- Tables: books, customers, orders, admins
--- Storage: covers (public), ebooks (private PDFs)
+-- Tables: books, customers, orders
+-- Only the backend server connects to the database, so there are no
+-- row-level security rules; the server checks admin access itself.
 -- ============================================================
-
--- ---------- Admins ----------
-create table public.admins (
-  user_id uuid primary key references auth.users (id) on delete cascade,
-  created_at timestamptz not null default now()
-);
-
-create or replace function public.is_admin()
-returns boolean
-language sql
-security definer
-set search_path = public
-stable
-as $$
-  select exists (select 1 from public.admins where user_id = auth.uid());
-$$;
 
 -- ---------- Books ----------
 create table public.books (
@@ -77,41 +62,3 @@ create table public.orders (
 );
 
 create index orders_status_idx on public.orders (status, created_at desc);
-
--- ---------- Row Level Security ----------
-alter table public.admins enable row level security;
-alter table public.books enable row level security;
-alter table public.customers enable row level security;
-alter table public.orders enable row level security;
-
--- Admins can see the admin list (used to check "am I an admin?")
-create policy "admins read self" on public.admins
-  for select using (user_id = auth.uid());
-
--- Anyone can read active books; admins can read everything
-create policy "public read active books" on public.books
-  for select using (is_active or public.is_admin());
-create policy "admins manage books" on public.books
-  for all using (public.is_admin()) with check (public.is_admin());
-
--- Customers & orders: admins only. (Checkout writes them via Edge Functions
--- using the service-role key, which bypasses RLS.)
-create policy "admins read customers" on public.customers
-  for select using (public.is_admin());
-create policy "admins manage orders" on public.orders
-  for all using (public.is_admin()) with check (public.is_admin());
-
--- ---------- Storage ----------
-insert into storage.buckets (id, name, public) values
-  ('covers', 'covers', true),
-  ('ebooks', 'ebooks', false)
-on conflict (id) do nothing;
-
-create policy "admins upload files" on storage.objects
-  for insert with check (bucket_id in ('covers', 'ebooks') and public.is_admin());
-create policy "admins update files" on storage.objects
-  for update using (bucket_id in ('covers', 'ebooks') and public.is_admin());
-create policy "admins delete files" on storage.objects
-  for delete using (bucket_id in ('covers', 'ebooks') and public.is_admin());
-create policy "admins read ebooks" on storage.objects
-  for select using (bucket_id = 'ebooks' and public.is_admin());

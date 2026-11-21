@@ -36,7 +36,7 @@ export const categories: { id: "all" | Category; label: string }[] = [
 ];
 
 /**
- * Fallback catalogue — used when Supabase is not configured or unreachable.
+ * Fallback catalogue — used when the store's server can't be reached.
  * The live catalogue is managed from the admin panel (/admin).
  */
 export const fallbackBooks: Book[] = [

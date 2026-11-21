@@ -1,9 +1,14 @@
-import { supabase } from "../lib/supabase";
+import { adminApi } from "./session";
+
+export type OrderItemRow = { title: string; quantity: number; unit_price: number; position: number };
 
 export type OrderRow = {
   id: string;
-  book_id: string;
+  /** Set only when the order has a single title. */
+  book_id: string | null;
+  /** Readable summary of every book in the order, e.g. "Playing with Breath × 2, Moneytuition". */
   book_title: string;
+  order_items: OrderItemRow[];
   amount: number;
   currency: string;
   status: "pending" | "paid" | "failed";
@@ -11,6 +16,8 @@ export type OrderRow = {
   razorpay_payment_id: string | null;
   created_at: string;
   paid_at: string | null;
+  /** Why the last payment attempt failed (from Razorpay). */
+  payment_error: string | null;
   customers: { name: string; email: string; phone: string | null } | null;
   ship_name: string | null;
   ship_phone: string | null;
@@ -35,9 +42,8 @@ export async function updateDelivery(
   id: string,
   patch: { delivery_status?: DeliveryStatus; tracking_info?: string | null },
 ) {
-  const extra = patch.delivery_status === "shipped" ? { shipped_at: new Date().toISOString() } : {};
-  const { error } = await supabase!.from("orders").update({ ...patch, ...extra }).eq("id", id);
-  if (error) throw error;
+  // The server sets shipped_at when the status becomes "shipped".
+  await adminApi(`/orders/${id}`, { method: "PATCH", body: patch });
 }
 
 export type CustomerRow = {
@@ -49,22 +55,7 @@ export type CustomerRow = {
   orders: { amount: number; status: string; book_title: string }[];
 };
 
-export async function fetchOrders(): Promise<OrderRow[]> {
-  const { data, error } = await supabase!
-    .from("orders")
-    .select("*, customers(name, email, phone)")
-    .order("created_at", { ascending: false })
-    .limit(2000);
-  if (error) throw error;
-  return data as unknown as OrderRow[];
-}
+/** Newest first, each with its customer and line items (in bag order). */
+export const fetchOrders = () => adminApi<OrderRow[]>("/orders");
 
-export async function fetchCustomers(): Promise<CustomerRow[]> {
-  const { data, error } = await supabase!
-    .from("customers")
-    .select("*, orders(amount, status, book_title)")
-    .order("created_at", { ascending: false })
-    .limit(5000);
-  if (error) throw error;
-  return data as unknown as CustomerRow[];
-}
+export const fetchCustomers = () => adminApi<CustomerRow[]>("/customers");

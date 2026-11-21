@@ -1,5 +1,5 @@
 import { fallbackBooks, type Book, type Category, type Language } from "../data/books";
-import { supabase } from "./supabase";
+import { api } from "./api";
 
 /** Shape of a row in the `books` table. */
 export type BookRow = {
@@ -50,17 +50,13 @@ export function rowToBook(row: BookRow): Book {
   };
 }
 
+/** Visible books from the database; the built-in list if the backend can't be reached. */
 export async function fetchBooks(): Promise<Book[]> {
-  if (!supabase) return fallbackBooks;
-  const { data, error } = await supabase
-    .from("books")
-    .select("*")
-    .eq("is_active", true)
-    .order("sort_order")
-    .order("created_at");
-  if (error || !data?.length) {
-    if (error) console.error("Could not load books, using fallback:", error.message);
+  try {
+    // An empty list is respected (the admin hid every book); only a failure uses the built-in list.
+    return (await api<BookRow[]>("/api/books")).map(rowToBook);
+  } catch (err) {
+    console.error("Could not load books, using the built-in list:", (err as Error).message);
     return fallbackBooks;
   }
-  return (data as BookRow[]).map(rowToBook);
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { categories, languages, type Category, type Language } from "../data/books";
 import type { BookRow } from "../lib/books";
-import { supabase } from "../lib/supabase";
+import { adminApi } from "./session";
 import { Button, Card, Input, Label, Select, Textarea, inr } from "./ui";
 
 const emptyBook: BookRow = {
@@ -30,40 +30,40 @@ const emptyBook: BookRow = {
 const slugify = (s: string) =>
   s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
 
-const fileExt = (f: File) => f.name.split(".").pop()?.toLowerCase() || "bin";
+/** Stores an image on the server and returns its URL (/api/uploads/<id>). */
+const uploadImage = async (file: File) => (await adminApi<{ url: string }>("/uploads", { file })).url;
 
 export default function BooksAdmin() {
   const [books, setBooks] = useState<BookRow[] | null>(null);
   const [editing, setEditing] = useState<{ book: BookRow; isNew: boolean } | null>(null);
   const [error, setError] = useState("");
 
-  const load = async () => {
-    const { data, error } = await supabase!.from("books").select("*").order("sort_order").order("created_at");
-    if (error) setError(error.message);
-    else setBooks(data as BookRow[]);
-  };
+  const load = () =>
+    adminApi<BookRow[]>("/books")
+      .then(setBooks)
+      .catch((e: Error) => setError(e.message));
   useEffect(() => {
     load();
   }, []);
 
   const toggleActive = async (book: BookRow) => {
-    const { error } = await supabase!.from("books").update({ is_active: !book.is_active }).eq("id", book.id);
-    if (error) alert(error.message);
+    try {
+      await adminApi(`/books/${encodeURIComponent(book.id)}`, { method: "PATCH", body: { is_active: !book.is_active } });
+    } catch (e) {
+      alert((e as Error).message);
+    }
     load();
   };
 
   const remove = async (book: BookRow) => {
     if (!confirm(`Delete "${book.title}" permanently?`)) return;
-    const { error } = await supabase!.from("books").delete().eq("id", book.id);
-    if (error) {
-      alert(
-        error.code === "23503"
-          ? "This book has orders, so it can't be deleted (customer records must be kept). Use “Hide” instead to remove it from the website."
-          : error.message,
-      );
+    try {
+      // The server explains when a book can't be deleted because it has orders.
+      await adminApi(`/books/${encodeURIComponent(book.id)}`, { method: "DELETE" });
+    } catch (e) {
+      alert((e as Error).message);
       return;
     }
-    if (book.pdf_path) await supabase!.storage.from("ebooks").remove([book.pdf_path]);
     load();
   };
 
@@ -155,7 +155,6 @@ function BookForm({ initial, isNew, onDone }: { initial: BookRow; isNew: boolean
   const save = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
-    const db = supabase!;
     const id = isNew ? slugify(book.id || book.title) : book.id;
     if (!id) return setError("Please enter a title.");
 
@@ -163,13 +162,8 @@ function BookForm({ initial, isNew, onDone }: { initial: BookRow; isNew: boolean
       let cover = book.cover;
       if (coverFile) {
         setSaving("Uploading cover…");
-        const path = `${id}/cover-${Date.now()}.${fileExt(coverFile)}`;
-        const { error } = await db.storage.from("covers").upload(path, coverFile, { upsert: true });
-        if (error) throw error;
-        cover = db.storage.from("covers").getPublicUrl(path).data.publicUrl;
+        cover = await uploadImage(coverFile);
       }
-
-      const pdf_path = book.pdf_path;
 
       const preview_images: string[] = [];
       for (const [i, item] of previews.entries()) {
@@ -178,23 +172,19 @@ function BookForm({ initial, isNew, onDone }: { initial: BookRow; isNew: boolean
           continue;
         }
         setSaving(`Uploading preview image ${i + 1} of ${previews.length}…`);
-        const path = `${id}/preview-${Date.now()}-${i}.${fileExt(item)}`;
-        const { error } = await db.storage.from("covers").upload(path, item, { upsert: true });
-        if (error) throw error;
-        preview_images.push(db.storage.from("covers").getPublicUrl(path).data.publicUrl);
+        preview_images.push(await uploadImage(item));
       }
 
       setSaving("Saving…");
       const pages = book.pages.filter(([h, t]) => h.trim() || t.trim());
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { created_at, updated_at, ...rest } = book;
+      const { created_at, updated_at, pdf_path, ...rest } = book;
       const about = aboutText.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
       const highlights = highlightsText.split("\n").map((l) => l.trim()).filter(Boolean);
       const row = {
         ...rest,
         id,
         cover,
-        pdf_path,
         pages,
         preview_images,
         about,
@@ -202,12 +192,9 @@ function BookForm({ initial, isNew, onDone }: { initial: BookRow; isNew: boolean
         price: Math.round(Number(book.price)),
       };
 
-      const { error } = isNew
-        ? await db.from("books").insert(row)
-        : await db.from("books").update(row).eq("id", id);
-      if (error) {
-        throw error.code === "23505" ? new Error("A book with this ID already exists. Change the ID.") : error;
-      }
+      // The server explains problems such as a duplicate ID.
+      if (isNew) await adminApi("/books", { body: row });
+      else await adminApi(`/books/${encodeURIComponent(id)}`, { method: "PATCH", body: row });
       onDone();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

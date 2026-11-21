@@ -7,6 +7,12 @@ const fullAddress = (o: OrderRow) =>
     .filter(Boolean)
     .join(", ");
 
+/** One line per book, e.g. "Playing with Breath × 2". Falls back to the order summary. */
+const bookLines = (o: OrderRow) =>
+  o.order_items.length
+    ? o.order_items.map((i) => (i.quantity > 1 ? `${i.title} × ${i.quantity}` : i.title))
+    : [o.book_title];
+
 export default function OrdersAdmin() {
   const [orders, setOrders] = useState<OrderRow[] | null>(null);
   const [error, setError] = useState("");
@@ -65,9 +71,11 @@ export default function OrdersAdmin() {
         City: o.ship_city,
         State: o.ship_state,
         "PIN code": o.ship_pincode,
-        Book: o.book_title,
+        Books: bookLines(o).join("; "),
+        Copies: o.order_items.reduce((n, i) => n + i.quantity, 0) || 1,
         "Amount (INR)": o.amount,
         Payment: o.status,
+        "Payment error": o.payment_error,
         Delivery: deliveryLabels[o.delivery_status] ?? o.delivery_status,
         Tracking: o.tracking_info,
         "Razorpay payment ID": o.razorpay_payment_id,
@@ -105,7 +113,7 @@ export default function OrdersAdmin() {
               <th className="px-4 py-3">Date</th>
               <th className="px-4 py-3">Customer</th>
               <th className="px-4 py-3">Ship to</th>
-              <th className="px-4 py-3">Book</th>
+              <th className="px-4 py-3">Books</th>
               <th className="px-4 py-3 text-right">Amount</th>
               <th className="px-4 py-3">Payment</th>
               <th className="px-4 py-3">Delivery</th>
@@ -126,11 +134,18 @@ export default function OrdersAdmin() {
                     <span className="text-slate-500">{o.ship_phone ?? o.customers?.phone ?? "—"}</span>
                   </td>
                   <td className="max-w-64 px-4 py-3 text-slate-600">{fullAddress(o) || "—"}</td>
-                  <td className="px-4 py-3">{o.book_title}</td>
+                  <td className="px-4 py-3">
+                    {bookLines(o).map((line) => (
+                      <div key={line}>{line}</div>
+                    ))}
+                  </td>
                   <td className="px-4 py-3 text-right">{inr(o.amount)}</td>
                   <td className="px-4 py-3">
                     <StatusBadge status={o.status} />
                     <div className="mt-1 font-mono text-[11px] text-slate-400">{o.razorpay_payment_id ?? ""}</div>
+                    {o.status === "failed" && o.payment_error && (
+                      <div className="mt-1 max-w-48 text-xs text-red-600">{o.payment_error}</div>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     {o.status === "paid" ? (

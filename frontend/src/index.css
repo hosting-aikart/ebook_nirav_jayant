@@ -1496,8 +1496,10 @@
     place-items: center;
   }
 
+  /* The Bag button stays visible on phones (it's the way into checkout). */
   .text-button {
-    display: none;
+    font-size: 17px;
+    white-space: nowrap;
   }
 
   .hero {
@@ -2011,52 +2013,104 @@
   color: #c93b2b;
 }
 
-/* Bag Delivery Section & Form */
-.bag-section {
-  padding-top: 16px;
-  border-top: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
-}
-
-.bag-section-title {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+/* Bag: back button + order summary on the delivery step */
+.bag-back-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+  background: transparent;
   color: var(--ink);
-  margin-bottom: 4px;
+  font-size: 16px;
+  display: grid;
+  place-items: center;
 }
 
-.bag-section-help {
-  font-size: 12px;
-  color: color-mix(in srgb, var(--ink) 65%, transparent);
-  margin: 0 0 14px;
+.bag-back-btn:hover {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
 }
 
-.bag-form {
+.qty-controls button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.bag-order-summary {
   display: flex;
   flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  font-size: 14px;
+}
+
+.bag-order-summary > div {
+  display: flex;
+  justify-content: space-between;
   gap: 12px;
 }
 
-.bag-input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
+.bag-order-summary small {
+  color: color-mix(in srgb, var(--ink) 65%, transparent);
 }
 
-.bag-input-group label {
-  font-size: 12px;
-  font-weight: 500;
+.bag-order-summary-delivery {
+  color: color-mix(in srgb, var(--ink) 75%, transparent);
+}
+
+.bag-order-summary-total {
+  padding-top: 8px;
+  border-top: 1px dashed color-mix(in srgb, var(--ink) 15%, transparent);
+  font-size: 16px;
+}
+
+.bag-order-summary-total strong {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 400;
+}
+
+/* Checkout form (reader "Buy book" and the bag's delivery step) */
+.checkout-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   color: var(--ink);
 }
 
-.bag-input-group input {
-  height: 44px;
+.checkout-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.checkout-row-3 {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.checkout-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.checkout-field label {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.checkout-field input,
+.checkout-field select,
+.checkout-field textarea {
+  width: 100%;
+  min-height: 44px;
   padding: 0 14px;
   border-radius: 8px;
   border: 1px solid color-mix(in srgb, var(--ink) 20%, transparent);
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.75);
   font-family: inherit;
   font-size: 14px;
   color: var(--ink);
@@ -2064,65 +2118,87 @@
   transition: border-color 0.2s, background-color 0.2s;
 }
 
-.bag-input-group input:focus {
+.checkout-field textarea {
+  padding: 11px 14px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.checkout-field select {
+  padding-right: 8px;
+  text-overflow: ellipsis;
+}
+
+.checkout-field input:focus,
+.checkout-field select:focus,
+.checkout-field textarea:focus {
   border-color: var(--ink);
   background: #ffffff;
 }
 
-/* Mock Banner */
-.mock-banner {
-  background: color-mix(in srgb, var(--yellow) 25%, var(--paper));
-  border: 1px dashed color-mix(in srgb, var(--ink) 30%, transparent);
-  border-radius: 8px;
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.checkout-field input:disabled,
+.checkout-field select:disabled,
+.checkout-field textarea:disabled {
+  opacity: 0.6;
 }
 
-.mock-banner-title {
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--ink);
-}
-
-.mock-banner p {
-  font-size: 12px;
-  line-height: 1.5;
-  color: color-mix(in srgb, var(--ink) 80%, transparent);
+.checkout-alert,
+.checkout-notice {
   margin: 0;
-}
-
-.mock-banner code {
-  background: rgba(0, 0, 0, 0.06);
-  padding: 2px 5px;
-  border-radius: 4px;
-}
-
-.mock-pay-btn {
-  background: var(--ink);
-  color: var(--paper);
-  border: 0;
-  border-radius: 6px;
-  padding: 10px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.mock-pay-btn:hover {
-  opacity: 0.9;
-}
-
-.bag-error-alert {
   padding: 12px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.checkout-alert {
   background: #ffe8e6;
   border: 1px solid #fc817c;
   color: #8c2420;
-  border-radius: 6px;
-  font-size: 13px;
 }
+
+.checkout-notice {
+  background: color-mix(in srgb, var(--mist) 70%, white);
+  border: 1px solid color-mix(in srgb, var(--ink) 15%, transparent);
+}
+
+.checkout-pay {
+  width: 100%;
+  min-height: 54px;
+  padding: 10px 20px;
+  gap: 12px;
+  font-size: 17px;
+  text-align: center;
+}
+
+.checkout-pay:disabled {
+  cursor: progress;
+  opacity: 0.8;
+  transform: none;
+  box-shadow: none;
+}
+
+.checkout-pay .btn-spinner-wrap {
+  font-size: 14px;
+}
+
+.checkout-trust {
+  margin: 0;
+  text-align: center;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--ink) 60%, transparent);
+}
+
+.checkout-cancel {
+  align-self: center;
+  border: 0;
+  background: none;
+  color: color-mix(in srgb, var(--ink) 70%, transparent);
+  font-size: 13px;
+  text-decoration: underline;
+  padding: 4px;
+}
+
 
 /* Bag Footer */
 .bag-footer {
@@ -2299,87 +2375,63 @@
   font-family: monospace;
 }
 
-.order-downloads-section {
-  margin-bottom: 28px;
-  border-top: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
-  padding-top: 20px;
-}
-
-.order-downloads-section h3 {
-  font-family: var(--font-serif);
-  font-size: 20px;
-  margin: 0 0 4px;
-}
-
-.order-download-hint {
-  font-size: 13px;
-  color: color-mix(in srgb, var(--ink) 65%, transparent);
-  margin: 0 0 16px;
-}
-
-.order-download-list {
+.order-items {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.order-download-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 14px 18px;
   background: rgba(255, 255, 255, 0.7);
   border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
   border-radius: 8px;
+  font-size: 14px;
 }
 
-.order-download-info h4 {
-  font-size: 15px;
-  margin: 2px 0 0;
-  font-family: var(--font-serif);
-}
-
-.order-book-badge {
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-weight: 600;
-  color: var(--coral);
-}
-
-.order-download-actions {
+.order-item {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.order-btn-download {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--ink);
-  color: var(--paper);
-  font-size: 12px;
-  font-weight: 500;
-  padding: 8px 14px;
-  border-radius: 6px;
-  text-decoration: none;
-  transition: all 0.2s;
+.order-item small {
+  color: color-mix(in srgb, var(--ink) 65%, transparent);
 }
 
-.order-btn-download:hover {
-  background: color-mix(in srgb, var(--ink) 85%, black);
+.order-item-total {
+  padding-top: 8px;
+  border-top: 1px dashed color-mix(in srgb, var(--ink) 15%, transparent);
 }
 
-.order-btn-epub {
-  background: var(--mist);
-  color: var(--ink);
-  border: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+.order-item-total strong {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 400;
 }
 
-.order-btn-epub:hover {
-  background: color-mix(in srgb, var(--mist) 80%, black);
+.order-ship-to {
+  margin-bottom: 20px;
+}
+
+.order-ship-to > span {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: color-mix(in srgb, var(--ink) 65%, transparent);
+  margin-bottom: 4px;
+}
+
+.order-ship-to p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.order-footnote {
+  font-size: 13px;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--ink) 70%, transparent);
+  margin: -12px 0 24px;
 }
 
 /* ---------- About section ---------- */

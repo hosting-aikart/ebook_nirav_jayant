@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import Checkout from "./Checkout";
 import type { Book } from "../data/books";
+import type { OrderReceipt } from "../lib/checkout";
 
 export function ArrowIcon() {
   return (
@@ -39,10 +40,13 @@ export function BookReader({
   book,
   onClose,
   onAddToBag,
+  onOrderComplete,
 }: {
   book: Book;
   onClose: () => void;
   onAddToBag?: (book: Book) => void;
+  /** Called after "Buy book" is paid and verified. */
+  onOrderComplete: (receipt: OrderReceipt) => void;
 }) {
   const [position, setPosition] = useState(0);
   const [direction, setDirection] = useState<"open" | "next" | "prev">("open");
@@ -95,8 +99,15 @@ export function BookReader({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      // Don't turn pages while the customer is typing in the checkout form.
-      if (event.target instanceof HTMLInputElement) return;
+      // Don't turn pages or close the book while the customer is filling in the checkout form.
+      const target = event.target;
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
       if (event.key === "Escape") onClose();
       if (event.key === "ArrowRight") turn(1);
       if (event.key === "ArrowLeft") turn(-1);
@@ -231,7 +242,11 @@ export function BookReader({
             <strong>₹{book.price}</strong>
           </div>
           {checkingOut ? (
-            <Checkout book={book} onCancel={() => setCheckingOut(false)} />
+            <Checkout
+              lines={[{ book, quantity: 1 }]}
+              onPaid={onOrderComplete}
+              onCancel={() => setCheckingOut(false)}
+            />
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {onAddToBag && (

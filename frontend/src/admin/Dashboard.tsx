@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
 import { fetchOrders, type OrderRow } from "./data";
+import { adminApi } from "./session";
 import { Card, StatusBadge, fmtDate, inr } from "./ui";
 
 export default function Dashboard({ onNavigate }: { onNavigate: (tab: "orders" | "books") => void }) {
@@ -10,10 +10,9 @@ export default function Dashboard({ onNavigate }: { onNavigate: (tab: "orders" |
 
   useEffect(() => {
     fetchOrders().then(setOrders).catch((e) => setError(e.message));
-    supabase!
-      .from("books")
-      .select("id", { count: "exact", head: true })
-      .then(({ count }) => setBookCount(count ?? 0));
+    adminApi<unknown[]>("/books")
+      .then((books) => setBookCount(books.length))
+      .catch(() => setBookCount(null));
   }, []);
 
   if (error) return <p className="text-red-600">{error}</p>;
