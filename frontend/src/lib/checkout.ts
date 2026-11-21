@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Book } from "../data/books";
+import { currentAccount, sessionExpired } from "./account";
 import { ApiError, api } from "./api";
 
 /** One book in the order (from the bag, or "Buy book" for a single copy). */
@@ -173,13 +174,16 @@ export async function startCheckout({
     state: details.state.trim(),
     pincode: details.pincode.trim(),
   };
-  const key = JSON.stringify(request);
+  // Orders are linked to the signed-in account, so a different account must create a fresh order.
+  const key = JSON.stringify([request, currentAccount()?.email ?? null]);
 
   onStage("Preparing secure payment…");
   const [loaded, order] = await Promise.all([
     loadRazorpay(),
     lastOrder?.key === key ? lastOrder.order : api<CreatedOrder>("/api/checkout/order", { body: request }),
   ]).catch((err: Error) => {
+    // Signed out (or the session expired): the checkout form switches to sign-in.
+    if (err instanceof ApiError && err.status === 401) sessionExpired();
     throw new CheckoutError("error", err.message);
   });
   lastOrder = { key, order };

@@ -1,5 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { OrderReceipt } from "../lib/checkout";
+import { useAccount } from "../lib/account";
+import { downloadReceipt } from "../lib/receipt";
 
 interface OrderSuccessModalProps {
   order: OrderReceipt;
@@ -19,6 +21,9 @@ export function OrderSuccessModal({ order, onClose }: OrderSuccessModalProps) {
     };
   }, [onClose]);
 
+  // Time the confirmation appeared = time of payment, shown on the receipt.
+  const [paidAt] = useState(() => new Date());
+  const account = useAccount();
   const { shipTo } = order;
   const firstName = shipTo.name.split(" ")[0] || "friend";
 
@@ -102,9 +107,22 @@ export function OrderSuccessModal({ order, onClose }: OrderSuccessModalProps) {
           )}
         </p>
 
-        <button className="primary-button wide-button" onClick={onClose}>
-          Continue browsing
-        </button>
+        <div className="order-actions">
+          <button type="button" className="receipt-button" onClick={() => downloadReceipt(order, paidAt)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" />
+            </svg>
+            Download receipt (PDF)
+          </button>
+          {account && (
+            <a className="receipt-button" href="/account">
+              View my orders
+            </a>
+          )}
+          <button className="primary-button wide-button" onClick={onClose}>
+            Continue browsing
+          </button>
+        </div>
       </div>
     </div>
   );

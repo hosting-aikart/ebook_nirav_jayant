@@ -52,6 +52,33 @@ what is switched on: database, Razorpay test/live keys, webhook, admin sign-in.
 Open http://localhost:5173/admin and sign in with `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `backend/.env`.
 Sessions last 12 hours; changing the password signs everyone out. After 10 wrong passwords, sign-in pauses for 15 minutes.
 
+### 4b. "New order" emails
+Every paid order sends one email to `NOTIFY_EMAIL` (defaults to `ADMIN_EMAIL`) with the books, total,
+customer phone/email and delivery address. It is sent from the Gmail account in `SMTP_USER`.
+1. Turn on 2-Step Verification for that Google account.
+2. Google Account → Security → **App passwords** → create one (name it "Store") → copy the 16 letters.
+3. Put them in `backend/.env` as `SMTP_PASS=...` and restart the backend.
+
+Without `SMTP_PASS` the store still works; the server log just says order emails are off.
+Each order is emailed once, even if both the browser and the Razorpay webhook confirm it.
+
+### 4c. Customer accounts (sign-in required to order)
+Customers must **sign in or create an account before paying**; checkout shows the sign-in form first,
+and the server refuses orders from anyone not signed in. Each order uses the account's email and appears
+under **My orders** at **/account** with its delivery status (Ordered → Shipped → Delivered), tracking number
+and a receipt download.
+
+How sign-in is protected:
+- Passwords are stored only as salted scrypt hashes.
+- The session is a **JWT (HS256)** in an `httpOnly`, `SameSite=Lax` cookie (HTTPS-only in production), valid 30 days.
+  Page scripts can't read it and other websites can't use it.
+- The JWT signing key is random and kept in the database (`app_secrets`), or set `JWT_SECRET` in `.env`.
+- Wrong passwords are limited to 10 per 15 minutes per IP address and per account.
+- **Forgot password?** emails a one-time link valid for 30 minutes (max 3 per hour per account). Using it sets a
+  new password and signs the account out everywhere else. Until email (`SMTP_PASS`) is set up, the link is
+  printed in the backend terminal instead (development only).
+- Set `SITE_URL` in `.env` to the live website address once hosted, so reset links point there.
+
 ### 5. Shipping the books
 Books are printed copies delivered to the customer. At checkout the customer gives their mobile number and delivery address.
 Each paid order shows up in Admin → Orders with the full address. When you send it, set **Delivery** to "Shipped" and type the courier / tracking number. Set it to "Delivered" once it arrives.

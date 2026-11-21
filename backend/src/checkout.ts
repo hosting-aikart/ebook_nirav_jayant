@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { config } from "./config.js";
 import { db } from "./db.js";
 import { HttpError } from "./http.js";
+import { notifyOrderPaid } from "./notify.js";
 import {
   ORDER_ID_RE,
   PAYMENT_ID_RE,
@@ -60,7 +61,7 @@ from new_order, jsonb_to_recordset($12::jsonb)
  * Razorpay order and saves a pending order, then returns what Razorpay Checkout needs.
  * The body comes straight from the browser, so every field is validated here.
  */
-export async function createOrder(body: Record<string, unknown>) {
+export async function createOrder(body: Record<string, unknown>, accountId: string | null = null) {
   requireRazorpay();
   const clean = (v: unknown, max = 200) => String(v ?? "").trim().slice(0, max);
   const name = clean(body.name);
@@ -170,6 +171,14 @@ export async function createOrder(body: Record<string, unknown>) {
     ),
   ]);
 
+  // Signed-in customers see this order under "My orders".
+  if (accountId) {
+    await db().query(
+      "update orders set account_id = a.id from accounts a where a.id = $1 and orders.razorpay_order_id = $2",
+      [accountId, rzpOrder.id],
+    );
+  }
+
   return {
     keyId: config.razorpayKeyId,
     razorpayOrderId: rzpOrder.id,
@@ -181,13 +190,31 @@ export async function createOrder(body: Record<string, unknown>) {
   };
 }
 
-/** Marks an order paid. Safe to call twice (browser callback and webhook race each other). */
+/**
+ * Marks an order paid. Safe to call twice (browser callback and webhook race each other):
+ * only the call that actually flips the order to paid sends the owner's order email.
+ */
 async function markOrderPaid(razorpayOrderId: string, razorpayPaymentId: string) {
-  await db().query(
+  const { rowCount } = await db().query(
     `update orders set status = 'paid', razorpay_payment_id = $2, paid_at = now(), payment_error = null
      where razorpay_order_id = $1 and status <> 'paid'`,
     [razorpayOrderId, razorpayPaymentId],
   );
+  if (rowCount === 1) {
+    // Fire and forget: the customer's confirmation must not wait on (or fail because of) email.
+    void loadReceipt(razorpayOrderId)
+      .then((r) =>
+        notifyOrderPaid({
+          orderId: r.orderId,
+          paymentId: r.paymentId,
+          total: r.total,
+          customer: { name: r.shipTo.name, email: r.email, phone: r.shipTo.phone },
+          shipTo: r.shipTo,
+          items: r.items,
+        }),
+      )
+      .catch((err) => console.error(`Order email skipped for ${razorpayOrderId}:`, err));
+  }
 }
 
 async function loadReceipt(razorpayOrderId: string): Promise<OrderReceipt> {

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { MenuIcon } from "./BookParts";
 import { categories } from "../data/books";
+import { useAccount } from "../lib/account";
 
 /** On the home page links are in-page anchors; elsewhere they point back to "/". */
 const link = (onHome: boolean, hash: string) => (onHome ? hash : `/${hash}`);
@@ -31,6 +32,7 @@ export function SiteHeader({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const close = () => setMenuOpen(false);
+  const account = useAccount();
 
   return (
     <header className="site-header">
@@ -39,7 +41,11 @@ export function SiteHeader({
         <span className="brand-tagline">{SITE_TAGLINE}</span>
       </a>
       <nav className={menuOpen ? "nav-open" : ""} aria-label="Main navigation">
-        <a href="/bookshelf" onClick={close} aria-current={onHome ? undefined : "page"}>
+        <a
+          href="/bookshelf"
+          onClick={close}
+          aria-current={window.location.pathname.startsWith("/bookshelf") ? "page" : undefined}
+        >
           Bookshelf
         </a>
         <a href={link(onHome, "#about")} onClick={close}>
@@ -50,6 +56,18 @@ export function SiteHeader({
         </a>
       </nav>
       <div className="header-actions">
+        <a
+          className="text-button account-link"
+          href="/account"
+          title={account ? account.email : undefined}
+          aria-current={window.location.pathname.startsWith("/account") ? "page" : undefined}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="8.5" r="3.8" />
+            <path d="M4.5 20c1.4-3.6 4.2-5.4 7.5-5.4s6.1 1.8 7.5 5.4" />
+          </svg>
+          <span>{account ? "My account" : "Sign in"}</span>
+        </a>
         <button className="text-button" onClick={onOpenBag}>
           Bag ({bagCount})
         </button>

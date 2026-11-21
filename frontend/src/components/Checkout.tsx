@@ -1,4 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { useAccount } from "../lib/account";
+import { AuthForms } from "./AuthForms";
 import {
   CheckoutError,
   INDIAN_STATES,
@@ -34,7 +36,14 @@ export default function Checkout({
 }) {
   const [details, setDetails] = useShippingDetails();
   const [status, setStatus] = useState<Status>({ kind: "form" });
+  const account = useAccount();
   const total = lines.reduce((sum, l) => sum + l.book.price * l.quantity, 0);
+
+  // Signed-in customers: start with their name; the order always uses the account's email.
+  useEffect(() => {
+    if (!account) return;
+    setDetails((d) => ({ ...d, name: d.name || account.name, email: account.email }));
+  }, [account, setDetails]);
 
   // Fetch checkout.js while the customer fills in the form.
   useEffect(() => {
@@ -73,8 +82,30 @@ export default function Checkout({
     }
   };
 
+  // Customers must sign in (or create an account) before paying.
+  if (!account) {
+    return (
+      <div className="checkout-auth">
+        <p className="checkout-account-note">
+          <strong>Please sign in or create an account to continue.</strong> Your orders and their delivery status will
+          be saved in your account.
+        </p>
+        {status.kind === "error" && <p className="auth-error">{status.message}</p>}
+        <AuthForms onDone={() => setStatus({ kind: "form" })} />
+        {onCancel && (
+          <button type="button" className="checkout-auth-cancel" onClick={onCancel}>
+            {cancelLabel}
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <form className="checkout-form" onSubmit={pay} noValidate>
+      <p className="checkout-account-note">
+        Signed in as <strong>{account.email}</strong>. This order will appear in <a href="/account">My orders</a>.
+      </p>
       <div className="checkout-field">
         <label htmlFor="co-name">Full name</label>
         <input id="co-name" autoComplete="name" required {...field("name")} />
@@ -82,7 +113,16 @@ export default function Checkout({
       <div className="checkout-row">
         <div className="checkout-field">
           <label htmlFor="co-email">Email</label>
-          <input id="co-email" type="email" autoComplete="email" required {...field("email")} />
+          <input
+            id="co-email"
+            type="email"
+            autoComplete="email"
+            required
+            {...field("email")}
+            value={account.email}
+            readOnly
+            title="Orders use your account email"
+          />
         </div>
         <div className="checkout-field">
           <label htmlFor="co-phone">Mobile number</label>

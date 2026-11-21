@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import express, { type NextFunction, type Request, type Response } from "express";
+import { accountRouter, requireAccount } from "./accounts.js";
 import { adminConfigured, adminRouter } from "./admin.js";
 import { createOrder, handleWebhook, verifyPayment } from "./checkout.js";
 import { backendDir, config } from "./config.js";
@@ -48,7 +49,9 @@ export function createApp() {
   });
 
   app.post("/api/checkout/order", async (req, res) => {
-    res.json(await createOrder(req.body ?? {}));
+    // Only signed-in customers can order. The order uses the account's email and is linked to it.
+    const account = await requireAccount(req, "Please sign in or create an account to place your order.");
+    res.json(await createOrder({ ...(req.body ?? {}), email: account.email }, account.id));
   });
 
   app.post("/api/checkout/verify", async (req, res) => {
@@ -71,6 +74,7 @@ export function createApp() {
       .send(rows[0].data);
   });
 
+  app.use("/api/account", accountRouter);
   app.use("/api/admin", adminRouter);
   app.use("/api", () => {
     throw new HttpError(404, "Not found.");
