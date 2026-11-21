@@ -1569,11 +1569,12 @@
     left: -18%;
   }
 
+  /* Sits lower than the books: they cover its top, the rest shows below them. */
   .orbit-two {
     width: min(310px, 72vw);
     height: min(310px, 72vw);
     right: 2%;
-    top: 22%;
+    top: 36%;
     bottom: auto;
   }
 
@@ -2858,6 +2859,18 @@
   .about-stats {
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
+  }
+
+  /* Keep the circle inside its own area (below the pink card) instead of spilling up behind it. */
+  .about-side {
+    --mandala: min(320px, 82vw);
+    min-height: calc(var(--mandala) + 40px);
+    align-content: center;
+    margin-top: 24px;
+  }
+
+  .about-mandala {
+    width: var(--mandala);
   }
 }
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { OrderReceipt } from "../lib/checkout";
 import { useAccount } from "../lib/account";
+import { useBackToClose } from "../lib/backToClose";
 import { downloadReceipt } from "../lib/receipt";
 
 interface OrderSuccessModalProps {
@@ -11,6 +12,8 @@ interface OrderSuccessModalProps {
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
 export function OrderSuccessModal({ order, onClose }: OrderSuccessModalProps) {
+  useBackToClose(true, onClose);
+
   useEffect(() => {
     document.body.style.overflow = "hidden";
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();

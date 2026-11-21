@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import Checkout from "./Checkout";
 import type { Book } from "../data/books";
+import { useBackToClose } from "../lib/backToClose";
 import type { OrderReceipt } from "../lib/checkout";
 
 export function ArrowIcon() {
@@ -53,6 +54,9 @@ export function BookReader({
   const [hasOpened, setHasOpened] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
+  // Back closes the reader (and first leaves checkout, if it's open).
+  useBackToClose(true, onClose);
+  useBackToClose(checkingOut, () => setCheckingOut(false));
 
   // Image previews show two images per spread; text previews show one text page per spread.
   const images = book.previewImages ?? [];

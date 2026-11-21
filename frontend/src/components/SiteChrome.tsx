@@ -2,6 +2,7 @@ import { useState } from "react";
 import { MenuIcon } from "./BookParts";
 import { categories } from "../data/books";
 import { useAccount } from "../lib/account";
+import { useBackToClose } from "../lib/backToClose";
 
 /** On the home page links are in-page anchors; elsewhere they point back to "/". */
 const link = (onHome: boolean, hash: string) => (onHome ? hash : `/${hash}`);
@@ -31,7 +32,12 @@ export function SiteHeader({
   onOpenBag?: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const close = () => setMenuOpen(false);
+  const closeForNavigation = useBackToClose(menuOpen, () => setMenuOpen(false));
+  // Menu links navigate away, so the menu closes without stepping back in history.
+  const close = () => {
+    closeForNavigation();
+    setMenuOpen(false);
+  };
   const account = useAccount();
 
   return (

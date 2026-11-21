@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Checkout from "./Checkout";
+import { useBackToClose } from "../lib/backToClose";
 import type { Bag } from "../lib/bag";
 import { MAX_COPIES, type OrderReceipt } from "../lib/checkout";
 
@@ -14,6 +15,9 @@ const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 export function BagDrawer({ bag, onPaid, onBrowseBooks }: BagDrawerProps) {
   const { items, isOpen, close, count, total } = bag;
   const [step, setStep] = useState<"bag" | "details">("bag");
+  // Back closes the bag (and first returns from delivery details to the bag).
+  useBackToClose(isOpen, close);
+  useBackToClose(isOpen && step === "details", () => setStep("bag"));
 
   useEffect(() => {
     if (!isOpen) return;
