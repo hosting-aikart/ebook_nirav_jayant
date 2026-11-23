@@ -52,10 +52,10 @@ export function SiteHeader({
           onClick={close}
           aria-current={window.location.pathname.startsWith("/bookshelf") ? "page" : undefined}
         >
-          Bookshelf
+          Book
         </a>
         <a href={link(onHome, "#about")} onClick={close}>
-          About Nirav
+          About
         </a>
         <a href={link(onHome, "#practices")} onClick={close}>
           Shelves
@@ -110,7 +110,7 @@ export function SiteFooter({ onHome }: { onHome: boolean }) {
           <h4>Explore</h4>
           <a href={link(onHome, "#top")}>Home</a>
           <a href="/bookshelf">All books</a>
-          <a href={link(onHome, "#about")}>About Nirav</a>
+          <a href={link(onHome, "#about")}>About</a>
           <a href={link(onHome, "#practices")}>Shelves</a>
         </nav>
 
