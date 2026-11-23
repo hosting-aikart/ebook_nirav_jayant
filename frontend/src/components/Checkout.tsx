@@ -37,6 +37,8 @@ export default function Checkout({
   const [details, setDetails] = useShippingDetails();
   const [status, setStatus] = useState<Status>({ kind: "form" });
   const account = useAccount();
+  // Not signed in: check out as a guest (the default), or open the sign-in form.
+  const [showSignIn, setShowSignIn] = useState(false);
   const total = lines.reduce((sum, l) => sum + l.book.price * l.quantity, 0);
 
   // Signed-in customers: start with their name; the order always uses the account's email.
@@ -82,30 +84,46 @@ export default function Checkout({
     }
   };
 
-  // Customers must sign in (or create an account) before paying.
-  if (!account) {
+  // Optional sign-in, so the order is saved under "My orders". Guests can go back to the form.
+  if (!account && showSignIn) {
     return (
       <div className="checkout-auth">
         <p className="checkout-account-note">
-          <strong>Please sign in or create an account to continue.</strong> Your orders and their delivery status will
-          be saved in your account.
+          <strong>Sign in or create an account</strong> to see this order and its delivery status in My orders.
         </p>
-        {status.kind === "error" && <p className="auth-error">{status.message}</p>}
-        <AuthForms onDone={() => setStatus({ kind: "form" })} />
-        {onCancel && (
-          <button type="button" className="checkout-auth-cancel" onClick={onCancel}>
-            {cancelLabel}
-          </button>
-        )}
+        <AuthForms
+          onDone={() => {
+            setShowSignIn(false);
+            setStatus({ kind: "form" });
+          }}
+        />
+        <button type="button" className="checkout-auth-cancel" onClick={() => setShowSignIn(false)}>
+          Continue as guest
+        </button>
       </div>
     );
   }
 
   return (
     <form className="checkout-form" onSubmit={pay} noValidate>
-      <p className="checkout-account-note">
-        Signed in as <strong>{account.email}</strong>. This order will appear in <a href="/account">My orders</a>.
-      </p>
+      {account ? (
+        <p className="checkout-account-note">
+          Signed in as <strong>{account.email}</strong>. This order will appear in <a href="/account">My orders</a>.
+        </p>
+      ) : (
+        <p className="checkout-account-note">
+          Checking out as a guest, no account needed. Have an account?{" "}
+          <button
+            type="button"
+            className="checkout-signin-link"
+            onClick={() => setShowSignIn(true)}
+            disabled={busy}
+          >
+            Sign in
+          </button>{" "}
+          to save this order in My orders.
+        </p>
+      )}
       <div className="checkout-field">
         <label htmlFor="co-name">Full name</label>
         <input id="co-name" autoComplete="name" required {...field("name")} />
@@ -119,9 +137,7 @@ export default function Checkout({
             autoComplete="email"
             required
             {...field("email")}
-            value={account.email}
-            readOnly
-            title="Orders use your account email"
+            {...(account ? { value: account.email, readOnly: true, title: "Orders use your account email" } : {})}
           />
         </div>
         <div className="checkout-field">

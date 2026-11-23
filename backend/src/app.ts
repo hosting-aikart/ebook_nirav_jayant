@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import express, { type NextFunction, type Request, type Response } from "express";
-import { accountRouter, requireAccount } from "./accounts.js";
+import { accountRouter, currentAccount } from "./accounts.js";
 import { adminConfigured, adminRouter } from "./admin.js";
 import { createOrder, handleWebhook, verifyPayment } from "./checkout.js";
 import { backendDir, config } from "./config.js";
@@ -49,9 +49,15 @@ export function createApp() {
   });
 
   app.post("/api/checkout/order", async (req, res) => {
-    // Only signed-in customers can order. The order uses the account's email and is linked to it.
-    const account = await requireAccount(req, "Please sign in or create an account to place your order.");
-    res.json(await createOrder({ ...(req.body ?? {}), email: account.email }, account.id));
+    // Signed-in customers: the order uses the account's email and is linked to the account.
+    // Guests: the order uses the name, email, phone and address typed at checkout (validated in createOrder).
+    const account = await currentAccount(req);
+    const body = req.body ?? {};
+    res.json(
+      account
+        ? await createOrder({ ...body, email: account.email }, account.id)
+        : await createOrder(body),
+    );
   });
 
   app.post("/api/checkout/verify", async (req, res) => {

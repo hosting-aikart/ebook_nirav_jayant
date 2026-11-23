@@ -62,11 +62,13 @@ customer phone/email and delivery address. It is sent from the Gmail account in 
 Without `SMTP_PASS` the store still works; the server log just says order emails are off.
 Each order is emailed once, even if both the browser and the Razorpay webhook confirm it.
 
-### 4c. Customer accounts (sign-in required to order)
-Customers must **sign in or create an account before paying**; checkout shows the sign-in form first,
-and the server refuses orders from anyone not signed in. Each order uses the account's email and appears
-under **My orders** at **/account** with its delivery status (Ordered → Shipped → Delivered), tracking number
-and a receipt download.
+### 4c. Customer accounts (optional) and guest checkout
+Customers can **check out as a guest** without an account: they type their name, email, mobile number and
+delivery address at checkout, and these are saved with the order (Admin → Orders and Customers).
+Customers who **sign in** (checkout has a "Sign in" link) get the order linked to their account: it uses the
+account's email and appears under **My orders** at **/account** with its delivery status
+(Ordered → Shipped → Delivered), tracking number and a receipt download. Guest orders don't appear in
+My orders, even if an account with the same email exists.
 
 How sign-in is protected:
 - Passwords are stored only as salted scrypt hashes.

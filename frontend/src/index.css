@@ -3595,6 +3595,18 @@ a.receipt-button {
   font-weight: 600;
 }
 
+/* "Sign in" inside the guest checkout note: looks like the note's links. */
+.checkout-signin-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .account-page {
   padding: clamp(40px, 6vw, 90px) clamp(24px, 5.5vw, 95px) clamp(70px, 8vw, 120px);
   min-height: 70vh;

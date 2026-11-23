@@ -35,7 +35,7 @@ function PasswordInput({
 
 /**
  * Sign in / Create account / Forgot password. Used on /account and inside checkout
- * (customers must sign in before paying). Calls onDone after a successful sign-in.
+ * (optional: guests can pay without an account). Calls onDone after a successful sign-in.
  */
 export function AuthForms({ initialMode = "signin", onDone }: { initialMode?: Mode; onDone?: () => void }) {
   const [mode, setMode] = useState<Mode>(initialMode);
